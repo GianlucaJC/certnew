@@ -35,7 +35,7 @@ class ControllerMaster extends Controller
     }
 
     public function load_rev(Request $request) {
-        ////
+        /////
         $id_ref=$request->input('id_ref');
             // create the Google client
             //controllare per invocare le richieste direttamente
