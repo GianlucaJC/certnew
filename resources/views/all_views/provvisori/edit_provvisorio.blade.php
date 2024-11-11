@@ -53,22 +53,30 @@ use Illuminate\Support\Facades\Storage;
       <input type="hidden" value="{{url('/')}}" id="url" name="url">
 
             <div class="row">
-                <div class="col-md-7">
+                <div class="alert alert-info" role="alert">
+                  <a href='#' onclick="js_clone=1;load_clone('{{$id_provv}}')">
+                   Clicca quì per compilare i tag rilevati nel provvisorio
+                  </a>  
+                </div>              
+                <div class="col-md-12">
+                  <!--
                     <button type="button" class="btn btn-primary" onclick="$('#ifr_doc').width(1200);$('#div_compila').hide(100)";>ZOOM</button>
                     <button type="button" class="btn btn-secondary" onclick="$('#ifr_doc').width(640);$('#div_compila').show(100)";>Normal</button>
                     <a target='blank' href='https://docs.google.com/document/d/{{$id_provv}}/preview?usp=embed_googleplus'>
                             <button type="button" class="btn btn-success">Apri in finestra separata</button>
                     </a>
                     <hr>
+                  !-->  
                     <div id='div_frame'>
-                      <iframe id='ifr_doc' onload='check_load_js_for_clone()' src="https://docs.google.com/document/d/{{$id_provv}}/preview?embedded=true" style="width:640px; height:1500px;" frameborder="0"></iframe>
+                      <iframe id='ifr_doc' onload='check_load_js_for_clone()' src="https://docs.google.com/document/d/{{$id_provv}}/preview?embedded=true" style="width:1000px; height:1500px;" frameborder="0"></iframe>
                     </div>
                 </div>
-                
+             </div>
+            <div class="row" style='display:none'>
                 <div class="col-md-5" id='div_compila'>
                   <div class="alert alert-info" role="alert">
                     <a href='#' onclick="js_clone=1;load_clone('{{$id_provv}}')">
-                        Compilazione guidata dei tag rilevati nel provvisorio
+                        Clicca quì per compilare i tag rilevati nel provvisorio
                     </a>  
                    </div>
                     <?php

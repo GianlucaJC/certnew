@@ -14,20 +14,23 @@ function save_all(doc_id) {
 			str+=tag+"="+value  
 		}
 	})	
-	console.log(str)
+	$("#btn_save_cont").text("Attendere...");
+	$("#btn_save_cont").attr('disabled', true);
+
+	
 
 
 	url=$("#url").val()
 	const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
 	const csrf = metaElements.length > 0 ? metaElements[0].content : "";
   
-	fetch(url+"http://localhost:8012/certnew/public/save_dati", {
+	fetch(url+"/save_dati", {
 		method: 'post',
 		headers: {
 		  "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
 		  "X-CSRF-Token": csrf
 		},
-		body: "doc_id="+doc_id,
+		body:str,
 	})
 	.then(response => {
 		if (response.ok) {
@@ -35,6 +38,12 @@ function save_all(doc_id) {
 		}
 	})
 	.then(resp=>{
+		$( ".dati" ).each(function(){
+			if (this.value.length!=0)  $(this).attr('disabled', true);
+		})
+		$("#btn_save_cont").text("Salva dati");
+		$("#btn_save_cont").attr('disabled', false);
+	
 		//$('#ifr_doc').attr('srcdoc', resp.content);
 		
 	})

@@ -47,6 +47,7 @@ class ControllerEditProvvisori extends Controller
         $client->setIncludeGrantedScopes(true);
 
 		$client->setAccessType('offline');
+	
 		return $client;
 	}
 
@@ -62,9 +63,17 @@ class ControllerEditProvvisori extends Controller
     } 
 
 	function load_clone(Request $request) {
+		
 		$doc_id=$request->input('doc_id');		
+		 
+
 		$info=$this->open_doc($doc_id);
-		$str_all=$info['str_all'];
+		$str_all='
+			<input name="_token" type="hidden" value="'.csrf_token().'" id="token_csrf">
+      		<meta name="csrf-token" content="'.csrf_token().'">
+			<input type="hidden" name="url" id="url" value="'.url('/').'">';
+
+		$str_all.=$info['str_all'];
 		$tags=$info['all_tag'];
 		$all_tag=$tags['tags'];
 		$tag_O="&lt;";
@@ -107,7 +116,10 @@ class ControllerEditProvvisori extends Controller
 	}
 
 	function save_dati(Request $request) {
-		print_r($request()->post());
+		$posts=request()->post();
+		$doc_id=$request->input('doc_id');
+		$this->edit_doc($doc_id,$posts);
+		
 	}
 	function save_tag_edit(Request $request) {
 		$posts=request()->post();
@@ -130,7 +142,12 @@ class ControllerEditProvvisori extends Controller
         $client->setClientId(env('GOOGLE_DRIVE_CLIENT_ID'));
         $client->setClientSecret(env('GOOGLE_DRIVE_CLIENT_SECRET'));
         $client->refreshToken(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+
+		
+
         $service = new \Google_Service_Drive($client);
+		
+		
 
 		$response = $service->files->export($fileId, 'text/html', array('alt' => 'media' ));
 		$str_all = $response->getBody()->getContents();
@@ -176,6 +193,7 @@ class ControllerEditProvvisori extends Controller
 	public function edit_doc($documentId,$posts) {
 		$client = $this->getClient("docs");
 		$service = new \Google_Service_Docs($client);
+		
 		//open doc and edit
 		$doc = $service->documents->get($documentId);
 		foreach ($posts as $tag=>$value ) {
