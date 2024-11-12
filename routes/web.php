@@ -64,6 +64,14 @@ Route::middleware('auth')->group(function () {
 	Route::get('save_dati', [ 'as' => 'save_dati', 'uses' => 'App\Http\Controllers\ControllerEditProvvisori@save_dati']);
 	Route::post('save_dati', [ 'as' => 'save_dati', 'uses' => 'App\Http\Controllers\ControllerEditProvvisori@save_dati']);
 
+	Route::get('save_to_ready', [ 'as' => 'save_to_ready', 'uses' => 'App\Http\Controllers\ControllerEditProvvisori@save_to_ready']);
+	Route::post('save_to_ready', [ 'as' => 'save_to_ready', 'uses' => 'App\Http\Controllers\ControllerEditProvvisori@save_to_ready']);
+
+
+    Route::get('elenco_definitivi_idonei', [ 'as' => 'elenco_definitivi_idonei', 'uses' => 'App\Http\Controllers\ControllerDefinitivi@elenco_definitivi_idonei']);
+
+    Route::get('elenco_definitivi_non_idonei', [ 'as' => 'elenco_definitivi_non_idonei', 'uses' => 'App\Http\Controllers\ControllerDefinitivi@elenco_definitivi_non_idonei']);
+
 
     Route::get('new_master', [ 'as' => 'new_master', 'uses' => 'App\Http\Controllers\ControllerMaster@new_master']);
     

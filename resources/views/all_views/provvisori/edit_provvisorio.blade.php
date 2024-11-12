@@ -52,12 +52,17 @@ use Illuminate\Support\Facades\Storage;
       <meta name="csrf-token" content="{{{ csrf_token() }}}">
       <input type="hidden" value="{{url('/')}}" id="url" name="url">
 
-            <div class="row">
-                <div class="alert alert-info" role="alert">
+          <div class="card">
+            <div class="card-body">
+                Lotto <b>{{$info_provv[0]->lotto}}</b> Master di riferimento <i>{{$info_provv[0]->codice_associato_master}}</i>
+                  <hr>
                   <a href='#' onclick="js_clone=1;load_clone('{{$id_provv}}')">
                    Clicca quì per compilare i tag rilevati nel provvisorio
                   </a>  
-                </div>              
+            </div>
+          </div>
+
+            <div class="row">
                 <div class="col-md-12">
                   <!--
                     <button type="button" class="btn btn-primary" onclick="$('#ifr_doc').width(1200);$('#div_compila').hide(100)";>ZOOM</button>

@@ -29,13 +29,13 @@ use Illuminate\Support\Facades\Storage;
       <div class="container-fluid">
         <div class="row mb-2">
           <div class="col-sm-6">
-            <h1 class="m-0">ELENCO PROVVISORI</h1>
+            <h1 class="m-0">ELENCO CoA DEFINITIVI NON IDONEI</h1>
           </div><!-- /.col -->
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
               <li class="breadcrumb-item"><a href="{{ route('elenco_lotti') }}">Home</a></li>
-			  <li class="breadcrumb-item">Provvisori</li>
-              <li class="breadcrumb-item active">Elenco Provvisori</li>
+			  <li class="breadcrumb-item">CoA</li>
+              <li class="breadcrumb-item active">Elenco CoA non idonei</li>
             </ol>
           </div><!-- /.col -->
         </div><!-- /.row -->
@@ -48,7 +48,7 @@ use Illuminate\Support\Facades\Storage;
     <div class="content">
       <div class="container-fluid">
 
-		<form method='post' action="{{ route('elenco_provvisori') }}" id='frm_articolo' name='frm_articolo' autocomplete="off">
+		<form method='post' action="{{ route('elenco_definitivi_idonei') }}" id='frm_articolo' name='frm_articolo' autocomplete="off">
 			<input name="_token" type="hidden" value="{{ csrf_token() }}" id='token_csrf'>
 
 
@@ -58,7 +58,6 @@ use Illuminate\Support\Facades\Storage;
             <table id='tbl_articoli' class="display">
                 <thead>
                   <tr>
-                    <th style='width:70px'>Stato</th>
                     <th>Operazioni</th>
                     <th>LOTTO</th>
                     <th>Codice</th>
@@ -68,44 +67,30 @@ use Illuminate\Support\Facades\Storage;
                   </tr>
                 </thead>
                 <tbody>
-                  @foreach($elenco_provvisori as $provvisorio)
+                  @foreach($elenco_definitivi_non_idonei as $definitivo)
                     <tr>
-                        <td style='width:70px'>
-                            @if ($provvisorio->stato==0)
-                              <div class="alert alert-warning p-1" role="alert" align='center'>
-                                  Incompleto
-                              </div>
-                            @endif  
-                            @if ($provvisorio->stato==1)
-                              <div class="alert alert-success p-1" role="alert" align='center'>
-                                  Pronto
-                              </div>
-                            @endif  
-
-                        </td>
                         <td>
-                          @if ($provvisorio->stato==0)  
-                            <a href="edit_provvisorio/{{$provvisorio->id}}/{{$provvisorio->id_doc}}">
+                          @if ($definitivo->stato==0)  
+                            <a href="edit_provvisorio/{{$definitivo->id}}/{{$definitivo->id_doc}}">
                               <button type="button" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Compilazione</button>
                             </a>
                           @endif  
                         </td>
                         <td>
 
-                          <a target='blank' href='https://docs.google.com/document/d/{{$provvisorio->id_doc}}/preview?usp=embed_googleplus'>
-                            {{$provvisorio->lotto}}
+                          <a target='blank' href='https://docs.google.com/document/d/{{$definitivo->id_doc}}/preview?usp=embed_googleplus'>
+                            {{$definitivo->lotto}}
                           </a>		
                         </td>
-                        <td>{{$provvisorio->codice}}</td>
-                        <td>{{$provvisorio->codice_associato_master}}</td>
-                        <td>{{$provvisorio->created_at}}</td>
-                        <td>{{$provvisorio->updated_at}}</td>
+                        <td>{{$definitivo->codice}}</td>
+                        <td>{{$definitivo->codice_associato_master}}</td>
+                        <td>{{$definitivo->created_at}}</td>
+                        <td>{{$definitivo->updated_at}}</td>
                     </tr>  
                   @endforeach
                 </tbody>
                 <tfoot>
                   <tr>
-                    <th style='width:70px'>Stato</th>        
                     <th>Operazioni</th>  
                     <th>LOTTO</th>
                     <th>Codice</th>
@@ -155,6 +140,6 @@ use Illuminate\Support\Facades\Storage;
 	
 	
 
-	<script src="{{ URL::asset('/') }}dist/js/elenco_provvisori.js?ver=1.001"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_definitivi_ni.js?ver=1.001"></script>
 
 @endsection

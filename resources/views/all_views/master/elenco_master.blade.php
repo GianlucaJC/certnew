@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\Storage;
           </div><!-- /.col -->
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+              <li class="breadcrumb-item"><a href="{{ route('elenco_lotti') }}">Home</a></li>
 			  <li class="breadcrumb-item">Master</li>
               <li class="breadcrumb-item active">Elenco Master</li>
             </ol>

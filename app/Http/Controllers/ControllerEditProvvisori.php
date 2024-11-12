@@ -74,22 +74,38 @@ class ControllerEditProvvisori extends Controller
 			<input type="hidden" name="url" id="url" value="'.url('/').'">';
 
 		$str_all.=$info['str_all'];
+		
+		//alcuni caratteri vengono trasformati in simboli
+		//il simbolo di copyright in un cuore!
+		$str_all=str_replace("Symbol","Belleza",$str_all); 
+
 		$tags=$info['all_tag'];
 		$all_tag=$tags['tags'];
 		$tag_O="&lt;";
 		$tag_C="&gt;";
+		$entr=0;
 		foreach ($all_tag as $indice=>$tag_ref ) {
+			$entr++;
 			$tag=str_replace($tag_O,"",$tag_ref);$tag=str_replace($tag_C,"",$tag);
 			$tag_sost="<input type='text' class='dati' data-id_ref='$tag' style='width:80px'>";
 			$str_all=str_replace($tag_ref,$tag_sost,$str_all);
 		}	
 		//il relativo file JS che gestiste il provvisorio è in dist/js/add_script.js che viene iniettato tramite iframe
 		$str_all.="<hr>";
-		$str_all.="
-			<center>
-			 	<button type='button' onclick=\"save_all('$doc_id')\"  name='btn_save_cont' id='btn_save_cont'>Salva dati</button> 
-			</center>	
-		";
+		
+		if ($entr>0) {
+			$str_all.="
+				<center>
+					<button type='button' onclick=\"save_all('$doc_id')\"  name='btn_save_cont' id='btn_save_cont'>Salva dati</button> 
+				</center>	
+			";
+		} else {
+			$str_all.="
+				<center>
+					<button type='button' onclick=\"save_to_ready('$doc_id')\"  name='btn_ready' id='btn_ready'>Passa documento in 'pronto per trasformazione definitivo'</button> 
+				</center>	
+			";
+		}
 
 
 		$info['content']=$str_all;
@@ -119,8 +135,18 @@ class ControllerEditProvvisori extends Controller
 		$posts=request()->post();
 		$doc_id=$request->input('doc_id');
 		$this->edit_doc($doc_id,$posts);
-		
 	}
+
+	function save_to_ready(Request $request) {
+		$doc_id=$request->input('doc_id');
+        $up=cert_provvisori::where('id_doc','=',$doc_id)->update(['stato' =>1]);
+        $esito['header']="OK";
+        $esito['up']=$up;
+        echo json_encode($esito);		
+	}
+
+
+
 	function save_tag_edit(Request $request) {
 		$posts=request()->post();
 		$doc_id=$request->input('doc_id');

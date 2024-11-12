@@ -70,6 +70,8 @@ class ControllerProvvisori extends Controller
        
         $elenco_provvisori=cert_provvisori::from('cert_provvisori as p')
         ->select('p.id','p.id_doc','p.lotto','p.codice','p.codice_associato_master','p.stato','p.created_at','p.updated_at')
+        ->where('p.stato','=',0)
+        ->OrWhere('p.stato','=',1)
         ->get(); 
 		return view('all_views/provvisori/elenco_provvisori',compact('elenco_provvisori'));
     }

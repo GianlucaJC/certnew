@@ -42,12 +42,30 @@
 				  </li>
 
 				  <li class="nav-item">
+					<a href="{{route('elenco_definitivi_idonei')}}" class="nav-link">
+					  <i class="far fa-list-alt"></i>
+					  <p>Elenco definitivi idonei</p>
+					</a>
+				  </li>
+
+				  <li class="nav-item">
+					<a href="{{route('elenco_definitivi_non_idonei')}}" class="nav-link">
+					  <i class="far fa-list-alt"></i>
+					  <p>Elenco definitivi non idonei</p>
+					</a>
+				  </li>				  
+
+				  <hr>
+
+				  <li class="nav-item">
 					<a href="{{route('elenco_lotti')}}" class="nav-link">
 					<i class="far fa-list-alt"></i>
 					  <p>Elenco lotti</p>
 					</a>
-				  </li>				  
-		
+				  </li>		
+				  
+				  <HR>
+				<!--
 					 <li class="nav-item menu">
 						<a href="#" class="nav-link">
 						  <i class="fas fa-cogs"></i>
@@ -72,7 +90,8 @@
 
 						</ul>
 
-					 </li>					  
+					 </li>		
+				!-->	 			  
 
 
 
