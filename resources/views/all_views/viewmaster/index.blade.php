@@ -50,9 +50,10 @@ scratch. This page gets rid of all links and provides the needed markup only.
       <li class="nav-item">
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
-      <li class="nav-item  d-sm-inline-block">
+      
+	  <li class="nav-item  d-sm-inline-block">
 		<?php
-			
+			if (1==2) {
 			$referer = $_SERVER['HTTP_REFERER'] ?? null;
 			$uri_complete = request()->path();
 			//if ($uri_complete!="menu") {	
@@ -64,14 +65,16 @@ scratch. This page gets rid of all links and provides the needed markup only.
 				echo "</span>";
 			//}
 
-			
+			}
 		?>
 	</li>	
 	@yield('extra_button_home')  
 	<li class="nav-item  d-sm-inline-block">	
+		@if (1==2)
         <a href="{{ route('elenco_provvisori') }}" class="nav-link">
 			<button type="button" class="btn btn-primary btn-sm">Homepage</button>	
 		</a>
+		@endif
       </li>
 	  <!--
       <li class="nav-item d-none d-sm-inline-block">

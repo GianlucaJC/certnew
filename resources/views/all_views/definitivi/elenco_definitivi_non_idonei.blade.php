@@ -58,7 +58,7 @@ use Illuminate\Support\Facades\Storage;
             <table id='tbl_articoli' class="display">
                 <thead>
                   <tr>
-                    <th>Operazioni</th>
+                    <th>File</th>
                     <th>LOTTO</th>
                     <th>Codice</th>
                     <th>Documento MASTER</th>
@@ -70,12 +70,10 @@ use Illuminate\Support\Facades\Storage;
                   @foreach($elenco_definitivi_non_idonei as $definitivo)
                     <tr>
                         <td>
-                          @if ($definitivo->stato==0)  
-                            <a href="edit_provvisorio/{{$definitivo->id}}/{{$definitivo->id_doc}}">
-                              <button type="button" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Compilazione</button>
-                            </a>
-                          @endif  
-                        </td>
+                          <a href="#">
+                                <button type="button" class="btn btn-danger btn-lg"><i class="fas fa-file-pdf"></i></button>
+                              </a>
+                          </td>
                         <td>
 
                           <a target='blank' href='https://docs.google.com/document/d/{{$definitivo->id_doc}}/preview?usp=embed_googleplus'>

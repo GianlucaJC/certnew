@@ -58,7 +58,7 @@ use Illuminate\Support\Facades\Storage;
             <table id='tbl_articoli' class="display">
                 <thead>
                   <tr>
-                    <th>Operazioni</th>
+                    <th>File</th>
                     <th>LOTTO</th>
                     <th>Codice</th>
                     <th>Documento MASTER</th>
@@ -71,11 +71,9 @@ use Illuminate\Support\Facades\Storage;
                     <tr>
 
                         <td>
-                          @if ($definitivo->stato==0)  
-                            <a href="edit_provvisorio/{{$definitivo->id}}/{{$definitivo->id_doc}}">
-                              <button type="button" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Compilazione</button>
+                            <a href="#">
+                              <button type="button" class="btn btn-success btn-lg"><i class="fas fa-file-pdf"></i></button>
                             </a>
-                          @endif  
                         </td>
                         <td>
 

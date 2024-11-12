@@ -77,18 +77,31 @@ use Illuminate\Support\Facades\Storage;
                               </div>
                             @endif  
                             @if ($provvisorio->stato==1)
-                              <div class="alert alert-success p-1" role="alert" align='center'>
-                                  Pronto
-                              </div>
-                            @endif  
+                              <center>
+                                  <div class="form-check">
+                                    <input class="form-check-input sele_ready" type="checkbox" data-info_sele='{{$provvisorio->id}}' checked id='sele_{{$provvisorio->id}}'> 
+                                    <label for='sele_{{$provvisorio->id}}'>Pronto</label>
+                                  </div>                                
+                              </center>
 
+                            @endif  
                         </td>
                         <td>
                           @if ($provvisorio->stato==0)  
                             <a href="edit_provvisorio/{{$provvisorio->id}}/{{$provvisorio->id_doc}}">
                               <button type="button" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Compilazione</button>
                             </a>
-                          @endif  
+                          @endif
+                          @if ($provvisorio->stato==1)
+                          <a href="#">
+                              <button type="button" class="btn btn-success btn-sm" style='width:250px'>
+                               <i class="fas fa-check-circle"></i> Trasforma in definitivo idoneo</button>
+                            </a><hr>
+                            <a href="#">
+                              <button type="button" class="btn btn-danger btn-sm" style='width:250px'>
+                              <i class="fas fa-times-circle"></i> Trasforma in definitivo NON idoneo</button>
+                            </a>
+                          @endif
                         </td>
                         <td>
 
