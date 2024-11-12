@@ -4,7 +4,7 @@
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand Logo -->
     <a href="{{ route('dashboard') }}" class="brand-link">
-      <img src="{{ URL::asset('/') }}dist/img/4.png" alt="IngFUN Logo" class="brand-image img-circle elevation-5" style="opacity: 5;" >
+      <img src="{{ URL::asset('/') }}dist/img/logo.png" alt="CoA Logo" class="brand-image  elevation-5" style="opacity: 5;" >
       
 	  
 	  
@@ -57,14 +57,14 @@
 						</a>
 						<ul class="nav nav-treeview">
 						  <li class="nav-item">
-							<a href="{{route('dashboard')}}" class="nav-link">
+							<a href="{{route('elenco_lotti')}}" class="nav-link">
 							  <i class="far fa-circle nav-icon"></i>
 							  <p>Test1</p>
 							</a>
 						  </li>
 						
 						  <li class="nav-item">
-							<a href="{{route('dashboard')}}" class="nav-link ">
+							<a href="{{route('elenco_lotti')}}" class="nav-link ">
 							  <i class="far fa-circle nav-icon"></i>
 							  <p>Test2</p>
 							</a>
