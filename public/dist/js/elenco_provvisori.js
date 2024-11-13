@@ -84,6 +84,47 @@ $(document).ready( function () {
 } );
 
 
+function to_def(id_provv,from,id_doc,codice_master) {
+	txt=""
+	if (from=="2") 
+		txt="Idoneo"	
+	if (from=="3")
+		txt="Non Idoneo"
+	if (!confirm("Sicuri di trasfmare in Definitivo "+txt+"?")) return false;
+
+
+
+	url=$("#url").val()
+    const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
+    const csrf = metaElements.length > 0 ? metaElements[0].content : "";
+
+    fetch(url+"/to_def", {
+        method: 'post',
+        headers: {
+          "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-CSRF-Token": csrf
+        },
+        body: "id_provv="+id_provv+"&from="+from+"&id_doc="+id_doc+"&codice_master="+codice_master,
+    })
+    .then(response => {
+        if (response.ok) {
+           return response.json();
+        }
+    })
+    .then(resp=>{
+		if (resp.header=="OK") {
+			alert("OK")
+		}	
+		else
+			alert("Problema riscontrato durante l'operazione")
+    })
+    .catch(status, err => {
+        return console.log(status, err);
+    }) 	
+}
+
+
+
 function dele_element(value) {
 	if(!confirm('Sicuri di eliminare l\'elemento?')) 
 		event.preventDefault() 

@@ -79,6 +79,10 @@ Route::middleware('auth')->group(function () {
     Route::post('load_rev', [ 'as' => 'load_rev', 'uses' => 'App\Http\Controllers\ControllerMaster@load_rev']);
     
 
+    Route::post('to_def', [ 'as' => 'to_def', 'uses' => 'App\Http\Controllers\ControllerMaster@to_def']);
+    
+
+
     //per aggiornare tutti i riferimenti dei master nella tabella locale (tbl_master)
     Route::get('list_update', [ 'as' => 'list_update', 'uses' => 'App\Http\Controllers\MainController@list_update']);
 

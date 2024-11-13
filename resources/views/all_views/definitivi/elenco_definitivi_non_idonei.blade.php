@@ -70,7 +70,7 @@ use Illuminate\Support\Facades\Storage;
                   @foreach($elenco_definitivi_non_idonei as $definitivo)
                     <tr>
                         <td>
-                          <a href="#">
+                        <a target='_blank' href="doc/definitivi_non_idonei/{{$definitivo->codice_associato_master}}.pdf">
                                 <button type="button" class="btn btn-danger btn-lg"><i class="fas fa-file-pdf"></i></button>
                               </a>
                           </td>

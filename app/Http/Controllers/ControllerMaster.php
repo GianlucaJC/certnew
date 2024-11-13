@@ -83,6 +83,46 @@ class ControllerMaster extends Controller
         echo json_encode($esito);
     }
 
+    function to_def(Request $request) {
+        $id_provv=$request->input('id_provv');
+        $stato=$request->input('from');
+        $id_doc=$request->input('id_doc');
+        $codice_master=$request->input('codice_master');
+        $up=cert_provvisori::where('id','=',$id_provv)->update(['stato' =>$stato]);
+       
+
+        $client = new \Google_Client();
+        $client->setClientId(env('GOOGLE_DRIVE_CLIENT_ID'));
+        $client->setClientSecret(env('GOOGLE_DRIVE_CLIENT_SECRET'));
+        $client->refreshToken(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        $drive = new Drive($client);
+        $content=$drive->files->export($id_doc, 'application/pdf');
+        $txt=$content->getBody()->getContents();
+      
+        $fold="";
+        if ($stato=="2") $fold="definitivi_idonei";
+        if ($stato=="3") $fold="definitivi_non_idonei";
+        $filename="doc/$fold/$codice_master.pdf";
+        $attempt = 1;$header="OK";
+        do{
+            //Wait 5000ms
+            usleep(500000*$attempt);
+            //Try to get pdf file.
+            $content=$drive->files->export($id_doc, 'application/pdf', array( 'alt' => 'media' ));
+            //Save just fetched data.
+            file_put_contents($filename, $content->getBody()->getContents());
+            if(filesize($filename)) break;
+            else $attempt++;
+            if ($attempt>10) $header="KO";
+          }while(true);
+          
+          $esito['up']=$up;
+          $esito['header']=$header;
+          $esito['attesa']=$attempt;
+
+        echo json_encode($esito);
+    }
+
     public function save_master(Request $request) {
         $id_ref=$request->input('id_ref');
         $name_master_edit=$request->input('name_master_edit');

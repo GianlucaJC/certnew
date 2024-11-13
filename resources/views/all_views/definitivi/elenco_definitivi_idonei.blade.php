@@ -71,7 +71,7 @@ use Illuminate\Support\Facades\Storage;
                     <tr>
 
                         <td>
-                            <a href="#">
+                            <a target='_blank' href="doc/definitivi_idonei/{{$definitivo->codice_associato_master}}.pdf">
                               <button type="button" class="btn btn-success btn-lg"><i class="fas fa-file-pdf"></i></button>
                             </a>
                         </td>

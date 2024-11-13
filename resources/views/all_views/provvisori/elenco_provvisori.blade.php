@@ -50,8 +50,8 @@ use Illuminate\Support\Facades\Storage;
 
 		<form method='post' action="{{ route('elenco_provvisori') }}" id='frm_articolo' name='frm_articolo' autocomplete="off">
 			<input name="_token" type="hidden" value="{{ csrf_token() }}" id='token_csrf'>
-
-
+      <meta name="csrf-token" content="{{{ csrf_token() }}}">
+      <input type="hidden" value="{{url('/')}}" id="url" name="url">
 
         <div class="row">
           <div class="col-md-12">
@@ -94,11 +94,11 @@ use Illuminate\Support\Facades\Storage;
                           @endif
                           @if ($provvisorio->stato==1)
                           <a href="#">
-                              <button type="button" class="btn btn-success btn-sm" style='width:250px'>
+                              <button type="button" onclick="to_def({{$provvisorio->id}},2,'{{$provvisorio->id_doc}}','{{$provvisorio->codice_associato_master}}')" class="btn btn-success btn-sm" style='width:250px'>
                                <i class="fas fa-check-circle"></i> Trasforma in definitivo idoneo</button>
                             </a><hr>
                             <a href="#">
-                              <button type="button" class="btn btn-danger btn-sm" style='width:250px'>
+                              <button type="button" onclick="to_def({{$provvisorio->id}},3,'{{$provvisorio->id_doc}}','{{$provvisorio->codice_associato_master}}')" class="btn btn-danger btn-sm" style='width:250px'>
                               <i class="fas fa-times-circle"></i> Trasforma in definitivo NON idoneo</button>
                             </a>
                           @endif
@@ -168,6 +168,6 @@ use Illuminate\Support\Facades\Storage;
 	
 	
 
-	<script src="{{ URL::asset('/') }}dist/js/elenco_provvisori.js?ver=1.001"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_provvisori.js?ver=1.006"></script>
 
 @endsection
