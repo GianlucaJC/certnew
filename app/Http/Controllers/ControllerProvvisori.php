@@ -76,14 +76,31 @@ class ControllerProvvisori extends Controller
 		return view('all_views/provvisori/elenco_provvisori',compact('elenco_provvisori'));
     }
 
-    public function elenco_lotti(Request $request) {
+    public function esclusi() {
+        $fp=fopen('doc/codici_no.txt',"r");
+        $cod_esclusi="";
+        while(!feof($fp)){
+            $line = fgets($fp);
+            if (strlen($cod_esclusi)>0) $cod_esclusi.=", ";
+            $cod_esclusi.="'".trim($line)."'";
+        }
+        fclose($fp);
+        return $cod_esclusi;
+    }
+    public function elenco_lotti(Request $request) {        
+        $cod_esclusi=$this->esclusi();
+        $cond=" (`i`.`DBcodice` not in (".$cod_esclusi.")) ";
+
         $data_lotti=$request->input('data_lotti');
         if (strlen($data_lotti)==0) $data_lotti=date("Y-m-d");
         $elenco_lotti=impegnolotti::from('impegnolotti as i')
         ->leftjoin('cert_provvisori as c','i.DBlotto','c.lotto')
         ->select('i.DBlotto','i.DBcodice','i.DBdata','i.DBprodotto','c.check_master')
         ->where('i.DBdata','=',$data_lotti)
+        ->where('i.DBcontrollo','<>','!')
+        ->whereRaw($cond)
         ->get();        
+
         return view('all_views/provvisori/elenco_lotti',compact('elenco_lotti','data_lotti'));
     }
 
@@ -101,91 +118,108 @@ class ControllerProvvisori extends Controller
         $pref2 = substr($cod_search, 1, 2);
         $pref3 = substr($cod_search, 1, 3);
         $cod_s=substr($cod_search, 1);
+        $opzioni=0;
+        $reg=0;
         // $10 - $11 - $12 - $13 - $18X
         if (substr($cod_search, 0, 1) == "$") {
-            if ($pref2 == "10" || $pref2 == "11" || $pref2 == "12" || $pref2 == "13" || $pref2 == "15" || $pref2 == "16" || $pref2 == "18")  
+            if ($pref2 == "10" || $pref2 == "11" || $pref2 == "12" || $pref2 == "13" || $pref2 == "15" || $pref2 == "16" || $pref2 == "18") {
+                $reg="100";
                 $cod_s=substr($cod_search, 1);
+            }   
            
            //$2 - $3 - $4 - $5 - $6 - $79 - $8 - $91 - $92 -
            if ($pref1 == "2" || $pref1 == "3" || $pref1 == "4" || $pref1 == "5" || $pref1 == "6" || $pref2 == "79" || $pref1 == "8" || $pref2 == "91" || $pref2 == "92" || $pref2 == "93") { 
+              $reg="200";
               $cod_s = substr($cod_search,1);
+              $opzioni=1;
               // ''' evita di prendere il file master con _KIT....non so se vale per tutte queste famiglie....di sicuro si per i 91
             }
         }
 
-         /*
-            '$9
-            If (Mid(cod_search, 1, 1) = "$") Then
-                If (pref1 = "9") Then
-                    cod_s = Mid(cod_search, 2)
-                End If
-            End If
+         
+        //$9
+        if (substr($cod_search, 0, 1) == "$") {
+            If ($pref1 == "9") {
+                $reg="300";
+                $cod_s = substr($cod_search, 1);
+            }   
+        }
+        
+        //$7 - $95 - '$95XXX-XX
+        if (substr($cod_search, 0, 1) == "$") {
+            if ($pref1 == "7") {$reg="400";$cod_s = $cod_search;}
             
-            '$7 - $95 - '$95XXX-XX
-            If (Mid(cod_search, 1, 1) = "$") Then
-                If (pref1 = "7") Then
-                cod_s = cod_search
-                End If
-                If (pref2 = "95") And Mid(cod_search, 7, 1) <> "-" Then
-                    cod_s = Mid(cod_search, 2)
-                End If
-                If (pref2 = "95") And (Mid(cod_search, 7, 1) = "-" Or Mid(cod_search, 6, 1) = "-") Then
-                    cod_s = cod_search
-                End If
-            End If
+            if (($pref2 == "95") && substr($cod_search, 6, 1) <> "-") {
+                $reg="500";
+                $cod_s = substr($cod_search, 1);
+            }
             
+            if (($pref2 == "95") && (substr($cod_search, 6, 1) == "-" || substr($cod_search, 5, 1) == "-")) {
+                $reg="600";
+                $cod_s = $cod_search;
+            }
+        }
+
             
-            '''da $9501 a $9511
-            If (cod_search = "$9501" Or cod_search = "$9502" Or cod_search = "$9503" Or cod_search = "$9504" Or cod_search = "$9505" Or cod_search = "$9506" Or cod_search = "$9507" Or cod_search = "$9508" Or cod_search = "$9509" Or cod_search = "$9510" Or cod_search = "$9511") Then
-                cod_s = Mid(cod_search, 2)
-            End If
+        //da $9501 a $9511
+        if ($cod_search == "$9501" || $cod_search == "$9502" || $cod_search == "$9503" || $cod_search == "$9504" || $cod_search == "$9505" || $cod_search == "$9506" || $cod_search == "$9507" || $cod_search == "$9508" || $cod_search == "$9509" || $cod_search == "$9510" || $cod_search == "$9511") {
+            $reg="700";
+            $cod_s = substr($cod_search, 1);
+        }
+        
+        //$1 $5
+        if (substr($cod_search, 0, 1) == "$") {
+            if ($pref1 == "1" || $pref1 == "5") {
+                $reg="800";
+                $cod_s = substr($cod_search, 1);
+            }
+        }
+        
+        //$080 - $086 - $088
+        if (substr($cod_search, 0, 1) == "$") {
+            if ($pref3 =="080" || $pref3 == "086" || $pref3 == "088") {
+                $reg="900";
+                $cod_s = substr($cod_search, 2);
+            }
+        }
+        
+        //*0
+        if (substr($cod_search, 0, 1) == "*") {
+            if ($pref1 =="0") {
+                $reg="1000";
+                $cod_s = substr($cod_search, 1);
+            } 
+        }
+        
+        //6-7-8-9
+        if (substr($cod_search, 0, 1) == "6" || substr($cod_search, 0, 1) == "7" || substr($cod_search, 0, 1) == "8" || substr($cod_search, 0, 1) == "9") {
+            $reg="1100";
+            $cod_s = $cod_search;
+        //91-96
+            if ((substr($cod_search, 0, 2) == "91") && substr($cod_search, 0, 1) !="$") {
+                $reg="1200";
+                $cod_s = $cod_search."_KIT";
+            }
+        }
+
             
-            '$1 $5
-            If (Mid(cod_search, 1, 1) = "$") Then
-                If pref1 = "1" Or pref1 = "5" Then
-                    cod_s = Mid(cod_search, 2)
-                End If
-            End If
+        //...cominciano con $70
+        if (substr($cod_search, 0, 3) == "$70") {
+            $reg="1300";
+            $cod_s = substr($cod_search, 1);
+        }
+        
+        //91 cerco con kit
+        //$XXX
+        if (strlen($cod_search) == 4 && substr($cod_search, 0, 1) == "$") {
+            $reg="1400";
+            $cod_s = $cod_search;
+        } 
+        //$92XXX-XX : non hanno certificato....poco male....
+
+        /*
+
             
-            '$080 - $086 - $088
-            If (Mid(cod_search, 1, 1) = "$") Then
-                If pref3 = "080" Or pref3 = "086" Or pref3 = "088" Then
-                    cod_s = Mid(cod_search, 3)
-                End If
-            End If
-            
-            
-            '*0
-            If (Mid(cod_search, 1, 1) = "*") Then
-                If (pref1 = "0") Then
-                    cod_s = Mid(cod_search, 2)
-                End If
-            End If
-            
-            '6-7-8-9
-            If (Mid(cod_search, 1, 1) = "6" Or Mid(cod_search, 1, 1) = "7" Or Mid(cod_search, 1, 1) = "8" Or Mid(cod_search, 1, 1) = "9") Then
-                cod_s = cod_search
-            '91-96
-                If (Mid(cod_search, 1, 2) = "91") And Mid(cod_search, 1, 1) <> "$" Then
-                    cod_s = cod_search + "_KIT"
-                End If
-            End If
-            
-            
-            '...cominciano con $70
-            If (Mid(cod_search, 1, 3) = "$70") Then
-                cod_s = Mid(cod_search, 2)
-            End If
-            
-            
-            '91 cerco con kit
-            
-            
-            ''' $XXX
-            If (Len(cod_search) = 4 And Mid(cod_search, 1, 1) = "$") Then
-            cod_s = cod_search
-            End If
-            '$92XXX-XX : non hanno certificato....poco male....
             
             
                     
@@ -230,8 +264,286 @@ class ControllerProvvisori extends Controller
             cod_s = UCase(cod_s) 
         */       
 
-        return $cod_s;
+        $ris['regola_iniziale']=$reg;
+        $master=$this->verifica_stato($cod_s,$opzioni);
+        $ris['master']=$master;
 
+        return $ris;
+
+    }
+    
+    public function DetAlpha($str) {
+        $ret = false;
+        for ($x=1;$x<strlen($str);$x++) {
+            $temp=strtoupper(substr($str, $x, 1));
+            if (ord($temp)>64 && ord($temp) < 91) {
+                $ret = true;
+                break;
+            }
+        }
+        return $ret;
+    }
+
+    public function verifica_stato($cod_s, $opzioni) {
+
+        $verifica_stato = "?";
+        
+        $no_sist = "$71630-19;$71630-20;$71640-19;$71640-20;$71678-01A;$71716-25;$71822-25;$71740-10";
+        $cod1 = explode(";",$no_sist);
+        $t_sist = 0;
+        for ($sca=0;$sca<count($cod1);$sca++) {
+            $nos = $cod1[$sca];
+            if ($cod_s == $nos) {$t_sist = 1;break;}
+        }
+
+
+        if ($t_sist == 0) {
+            $eee = 0;
+            if (substr($cod_s, 0, 7) == "$72592C" && substr_count($cod_s, "-") > 0) $eee = 1;
+
+            if ((substr_count($cod_s, "-") > 0 && substr($cod_s, 0, 2) == "$7" || (substr($cod_s, 0, 3) == "$95" && substr_count($cod_s, "-") > 0) && $this->DetAlpha($cod_s) == false) || $eee == 1) {
+                //verifica sistemi
+                $cod1 = explode("-",$cod_s);
+                $cod_s1 = $cod1[0]."P";
+                  
+                $check_master=tbl_master::select('real_name')->where('real_name','=',$cod_s1)->first();
+                if (isset($check_master->real_name)) {
+                    $verifica_stato=$check_master->real_name;
+                    return $verifica_stato;
+                }
+            }
+        }
+        $fl=0;$dato="";$ris_under=array();
+        if (substr_count($cod_s, "_")==0) {
+            $check_master=tbl_master::select('real_name')
+                ->where('real_name','like',"%$cod_s%")
+                ->where('real_name','like',"%_%")
+                ->where('real_name','not like',"%stampa%");
+            if ($check_master->count()>0) {
+                $ris_under=$check_master->get();
+                $fl=1;
+            }
+        }
+
+        $trov = 0;
+        if ($fl == 1) {
+            //ricerca codice dal nome file (array derivato da split _ o -)
+            foreach ($ris_under as $under) {
+                $dato=$under->real_name;
+                $info=explode("_",$dato);
+                
+                if ($opzioni == 1 && substr_count($dato, "kit") > 0) continue;
+
+                for ($ric=0;$ric<count($info);$ric++) {
+                    $cod_doc = $info[$ric];
+                    $cod_doc = trim($cod_doc);
+                    if ($cod_s == $cod_doc) {
+                        $trov = 1;$verifica_stato=$dato;break;
+                    }
+                }
+            }
+        }    
+        else {
+            //codice singolo su nome file
+            $check_master=tbl_master::select('real_name')->where('real_name','=',$cod_s)->first();
+            if (isset($check_master->real_name)) {$trov=1;$verifica_stato=$check_master->real_name;}
+        }
+       
+        return $verifica_stato;
+
+        /*
+            //Di seguito, il codice originale in vb6 che ho codificato in php in questa function
+
+            verifica_stato = "?"
+            
+            no_sist = "$71630-19;$71630-20;$71640-19;$71640-20;$71678-01A;$71716-25;$71822-25;$71740-10"
+            cod1 = Split(no_sist, ";")
+            t_sist = 0
+            For sca = LBound(cod1) To UBound(cod1)
+                nos = cod1(sca)
+                If (cod_s = nos) Then t_sist = 1: Exit For
+            Next
+
+            If t_sist = 0 Then
+                    eee = 0
+                    If Mid(cod_s, 1, 7) = "$72592C" And InStr(cod_s, "-") > 0 Then eee = 1
+        
+                    If ((InStr(cod_s, "-") > 0 And Mid(cod_s, 1, 2) = "$7" Or (Mid(cod_s, 1, 3) = "$95" And InStr(cod_s, "-") > 0)) And DetAlpha(cod_s) = False) Or eee = 1 Then
+                    ''verifica sistemi
+                            cod1 = Split(cod_s, "-")
+                            cod_s = cod1(0)
+                            For sca = 0 To File1.ListCount - 1
+                            n_file = File1.List(sca)
+                            dato = UCase(File1.List(sca))
+                                            
+                            dato = Replace(dato, ".DOC", "")
+                            dato = Replace(dato, ".ODT", "")
+                            dato = Replace(dato, " ", "")
+                            
+                            If cod_s + "P" = dato Then trov = 1: Exit For
+                            Next
+                            If trov = 1 Then verifica_stato = n_file
+                            Exit Function
+                    End If
+            End If
+
+            
+            For sca = 0 To File1.ListCount - 1
+                
+                n_file = File1.List(sca)
+                dato = UCase(File1.List(sca))
+                
+                dato = Replace(dato, ".DOC", "")
+                dato = Replace(dato, ".ODT", "")
+                fl = 0
+                If (InStr(dato, "_") > 0 And InStr(cod_s, "_") = 0) Then
+                    info = Split(dato, "_")
+                    fl = 1
+                Else
+                    'If (InStr(dato, "-")) > 0 Then
+                    '    info = Split(dato, "-")
+                    '    fl = 1
+                    'End If
+                End If
+                
+                entra = 1
+                '''utilizzare il flag entra per creare regole in base al parametro opzioni
+                If opzioni = 1 And InStr(dato, "KIT") > 0 Then entra = 0
+                
+                If entra = 1 Then
+                        trov = 0
+                        If fl = 1 Then
+                            
+                            '''ricerca codice dal nome file (array derivato da split _ o -)
+                            If InStr(dato, "stampa") = 0 And InStr(dato, "STAMPA") = 0 Then
+                                For ric = LBound(info) To UBound(info)
+                                    cod_doc = info(ric)
+                                    cod_doc = Trim(cod_doc)
+                                    If cod_s = cod_doc Then trov = 1: Exit For
+                                Next
+                            End If
+                            
+                        Else
+                        ''' codice singolo su nome file
+                            cod_doc = dato
+                            cod_doc = Trim(cod_doc)
+                            If cod_s = cod_doc Then trov = 1
+                        End If
+                        
+                        If trov = 1 Then verifica_stato = n_file
+                        '''se del file OO esiste il corrispondente in DOC prendo quest'ultimo senza fare successivamente altre trasformazioni
+                        If trov = 1 Then
+                        If (InStr(n_file, "odt") > 0 Or InStr(n_file, "ODT") > 0) Then
+                            file_doc = Replace(n_file, "odt", "doc")
+                            
+                            
+                            If Len(Trim(Dir(Percorso + "\master\" + file_doc))) > 0 Then verifica_stato = file_doc
+                        End If
+                        End If
+            End If
+            Next
+        
+
+        */
+    
+    }
+
+
+    public function check_sistema($cod_search) {
+        $cod=strtoupper($cod_search);
+        return $cod;
+        
+        /*15.11.2024: ho iniziato a tradurre il codice presente in griglia() di VB6
+            ma poi ho deciso di soprassedere: questa function riduce a sistema tutti i codici che possono 
+            essere accorpati con determinate regole ma il concetto è diverso in vb6.
+            Questo perchè il vecchio prg predisponeva comunque una tabella di tutti i provvisori a prescindere se venivano assegnati o meno i master. Quindi veniva fatta una scansione di tutta la tabella per mostrare nella griglia i sistemi accorpati in modo adeguato. Ma nel nuovo, la tabella viene popolata solo quando i provvisiori vengono assegnati.
+        */
+        $sistema = "?"; $flag = 0;
+        $dx_min = "9999";$dx_max = "00000";
+        $lotto_sx = "";$lotto_dx = "";
+        $id_s = "";
+        
+        
+        $no_sist = "$71630-19;$71630-20;$71640-19;$71640-20;$71678-01A;$71716-25;$71822-25;$71740-10";
+        $cod1 = explode(";",$no_sist);
+        $t_sist = 0;
+        for ($sca=0;$sca<count($cod1);$sca++) {
+            $nos = $cod1[$sca];
+            if ($cod = $nos) {$t_sist = 1; break;}
+        }
+        
+       /*
+        If in_array(cod, codici_no) = 0 And t_sist = 0 Then ''controllo codici da escludere
+            eee = 0
+            If Mid(cod, 1, 7) = "$72592C" And InStr(cod, "-") > 0 Then eee = 1
+            If (((Mid(cod, 1, 2) = "$7" And InStr(cod, "-") > 0 Or (Mid(cod, 1, 3) = "$95" And InStr(cod, "-") > 0)) And DetAlpha(cod) = False)) Or eee = 1 Then '''se si tratta di un sistema
+                sist = Split(cod, "-")
+                sx = sist(0)
+                dx = sist(1)
+                
+
+                
+                
+                If sistema <> sx Or sistema = "?" Then
+                    If sistema <> "?" Then
+                        riep = sistema + "-" + dx_min + "-" + dx_max
+                        n_add = n_add + 1
+                        GX.Rows = GX.Rows + 1
+                        sc_r = GX.Rows - 1
+                        GX.TextMatrix(sc_r, 0) = id_s
+                        
+                        
+                        GX.TextMatrix(sc_r, 1) = riep
+                        GX.TextMatrix(sc_r, 2) = Trim(descr)
+                        
+                        lotto = lotto_sx + "-" + lotto_dx
+                        GX.TextMatrix(sc_r, 3) = lotto
+                        
+                        GX.TextMatrix(sc_r, 4) = datap
+                        GX.TextMatrix(sc_r, 5) = scad
+                    End If
+                    '''prima volta
+                    dx_min = "9999": dx_max = "00000"
+                    If dx < dx_min Then
+                        dx_min = dx
+                        If Not IsNull(rs_db.Fields("DBlotto")) Then lotto_sx = rs_db.Fields("DBlotto")
+                    End If
+                    If dx > dx_max Then
+                        dx_max = dx
+                        If Not IsNull(rs_db.Fields("DBlotto")) Then lotto_dx = rs_db.Fields("DBlotto")
+                    End If
+                    id_s = ID + ";"
+                    
+                Else
+                    '''calcolo riepilogo
+                    If t_sist = 0 Then
+                            flag = 1
+                            If dx < dx_min Then
+                                dx_min = dx
+                                If Not IsNull(rs_db.Fields("DBlotto")) Then lotto_sx = rs_db.Fields("DBlotto")
+                            End If
+                            If dx > dx_max Then
+                                dx_max = dx
+                                If Not IsNull(rs_db.Fields("DBlotto")) Then lotto_dx = rs_db.Fields("DBlotto")
+                            End If
+                            id_s = id_s + ID + ";"
+                            descr = rs_db.Fields("DBprodotto")
+                            If Not IsNull(rs_db.Fields("DBdata")) Then datap = rs_db.Fields("DBdata") Else datap = ""
+                            
+                            If Not IsNull(rs_db.Fields("DBscadenza")) Then
+                                scad = CDate(rs_db.Fields("DBscadenza"))
+                                If scad = "01/01/1980" Then scad = ""
+                            Else
+                                scad = ""
+                            End If
+                End If
+                    
+                End If
+            sistema = sx
+            End If
+        End If
+    */
+       
     }
 
     public function crea_provv(Request $request) {
@@ -242,8 +554,8 @@ class ControllerProvvisori extends Controller
         $check_pres=cert_provvisori::select('id','lotto','check_master','id_doc')->where('lotto','=',$lotto)->first();
         $resp=array();
         
-        $file_id=null; $delete=null;
-        $ckm=0;$pres=0;$file_id_attuale=0;
+        $file_id=""; $delete=null;
+        $ckm=0;$pres=0;
         if (!isset($check_pres->lotto))
             $cert= new cert_provvisori;
         else {
@@ -253,29 +565,28 @@ class ControllerProvvisori extends Controller
             $cert = cert_provvisori::find($check_pres->id);
         } 
 
-
-        $codice_associato_master=$this->master_to_provv($cod_search);
+        $this->check_sistema($cod_search); //da implementare (ora non accorpa i sistemi!)
+        $info_master=$this->master_to_provv($cod_search);
+        $regola_iniziale=$info_master['regola_iniziale'];
+        $codice_associato_master=$info_master['master'];
             //in google drive i file con $ iniziale vengono sostituti con _, però mi serviva per lo Storage
             //$provvisorio=str_replace("$","_",$codice_associato_master);
         
         $provvisorio=$codice_associato_master.".doc";
 
 
-//ATTENZIONE!!!!!! Codice statico da rimuovere
-$codice_associato_master="92114_921140_921141";
-
+        //ATTENZIONE!!!!!! Codice statico da rimuovere
+        //$codice_associato_master="92114_921140_921141";
+        $canc=0;$file_canc="";
         $id_master="?";
         $check_master=tbl_master::select('id_doc')->where('real_name','=',$codice_associato_master)->first();
         if (isset($check_master->id_doc)) $id_master=$check_master->id_doc;
-        
-
-
+    
         if ($n_p=="1" || $pres==0 || ($pres==1 && $ckm==0)) {
             $ckm=0;
 
-            if ($n_p==1 && $file_id!=0) {
-                $delete=$this->delete_file_drive($file_id);
-                $resp['delete']=$delete;
+            if ($n_p==1 && strlen($file_id)!=0) {
+                $canc=1;$file_canc=$file_id;
             } 
            
             if ($id_master!="?") {
@@ -290,18 +601,25 @@ $codice_associato_master="92114_921140_921141";
             }
             */
         }
-     
-        $cert->lotto=$lotto;
-        $cert->codice=$cod_search;
-        $cert->codice_associato_master=$codice_associato_master;
-        $cert->id_doc=$file_id;
-        $cert->real_name=$provvisorio;
-        $cert->check_master=$ckm;
-        $cert->save();
-     
+        
+        if ($id_master!="?") {
+            $cert->lotto=$lotto;
+            $cert->codice=$cod_search;
+            $cert->codice_associato_master=$codice_associato_master;
+            $cert->id_doc=$file_id;
+            $cert->real_name=$provvisorio;
+            $cert->check_master=$ckm;
+            $cert->save();
+        }
+        if ($canc==1) {
+            $delete=$this->delete_file_drive($file_canc);
+            $resp['delete']=$delete;
+        } 
+
         
         $resp['lotto']=$lotto;
-
+        $resp['regola_iniziale']=$regola_iniziale;
+        $resp['codice_associato_master']=$codice_associato_master;
         $resp['provvisorio']=$provvisorio;
         $resp['file_id']=$file_id;
         $resp['check_master']=$ckm;

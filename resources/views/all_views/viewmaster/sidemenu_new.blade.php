@@ -3,11 +3,8 @@
   <!-- Main Sidebar Container -->
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand Logo -->
-    <a href="{{ route('dashboard') }}" class="brand-link">
-      <img src="{{ URL::asset('/') }}dist/img/logo.png" alt="CoA Logo" class="brand-image  elevation-5" style="opacity: 5;" >
-      
-	  
-	  
+    <a href="#" class="brand-link">
+      <img src="{{ URL::asset('/') }}dist/img/logo1.png" alt="CoA Logo" class="brand-image  elevation-5" style="opacity: 5;" >
 	  <span class="brand-text font-weight-light">Certificati</span>
     </a>
 

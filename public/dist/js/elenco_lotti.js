@@ -82,9 +82,9 @@ function make_call(indice) {
         if (indice<make_call.arr_info.length) make_call(indice)
         else {
             html=`<div class="alert alert-success mt-2" role="alert">
-                Certificati Provvisori creati con successo!<hr>
+                Scansione lotti eseguita!<hr>
 
-                <button type="button" onclick="$('#frm_lotti').submit()" class="btn btn-primary">Refresh tabella</button>
+                <button type="button" onclick="$('#frm_lotti').submit()" class="btn btn-primary">Esegui il refresh della tabella per vedere l'esito dell'associazione master</button>
             </div>`
             $("#div_progress").html(html)
         }

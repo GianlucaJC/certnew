@@ -16,6 +16,8 @@ npm-debug.log
 yarn-error.log
 credentials.json
 /public/credentials.json
+/public/doc/definitivi_idonei/*
+/public/doc/definitivi_non_idonei/*
 /config/filesystems.php
 /database/migrations/old/*
 /.fleet

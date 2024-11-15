@@ -52,9 +52,26 @@ use Illuminate\Support\Facades\Storage;
 			<input name="_token" type="hidden" value="{{ csrf_token() }}" id='token_csrf'>
       <meta name="csrf-token" content="{{{ csrf_token() }}}">
       <input type="hidden" value="{{url('/')}}" id="url" name="url">
-
+      <div id='div_progress' class='mb-2'></div>
+      
         <div class="row">
           <div class="col-md-12">
+            
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" checked id='sele_all' onchange='seleall()'> 
+              <label for='sele_all'>Seleziona/Deseleziona tutti i provvisori pronti</label>
+              <a href="#">
+                <button type="button" onclick="to_def_all(2)" class="btn btn-success btn-sm btn_def" id='btn_def_id' >
+                  <i class="fas fa-check-circle"></i> Trasforma i selezionati in definitivi idonei</button>
+              </a>
+              <a href="#">
+                <button type="button" onclick="to_def_all(3)" class="btn btn-danger btn-sm btn_def"  id='btn_def_nid'>
+                <i class="fas fa-times-circle"></i> Trasforma i selezionati in definitivi NON idonei</button>
+              </a>              
+            </div>  
+            <hr>
+
+
             <table id='tbl_articoli' class="display">
                 <thead>
                   <tr>
@@ -69,7 +86,7 @@ use Illuminate\Support\Facades\Storage;
                 </thead>
                 <tbody>
                   @foreach($elenco_provvisori as $provvisorio)
-                    <tr>
+                    <tr id='tr{{$provvisorio->id}}'>
                         <td style='width:70px'>
                             @if ($provvisorio->stato==0)
                               <div class="alert alert-warning p-1" role="alert" align='center'>
@@ -79,7 +96,14 @@ use Illuminate\Support\Facades\Storage;
                             @if ($provvisorio->stato==1)
                               <center>
                                   <div class="form-check">
-                                    <input class="form-check-input sele_ready" type="checkbox" data-info_sele='{{$provvisorio->id}}' checked id='sele_{{$provvisorio->id}}'> 
+                                    <input class="form-check-input sele_ready" type="checkbox" 
+                                      data-info_sele='{{$provvisorio->id}}' 
+                                      data-id_provv='{{$provvisorio->id}}'
+                                      data-id_doc='{{$provvisorio->id_doc}}'
+                                      data-codice_master='{{$provvisorio->codice_associato_master}}'
+                                      checked id='sele_{{$provvisorio->id}}'
+                                    />
+
                                     <label for='sele_{{$provvisorio->id}}'>Pronto</label>
                                   </div>                                
                               </center>
@@ -87,6 +111,7 @@ use Illuminate\Support\Facades\Storage;
                             @endif  
                         </td>
                         <td>
+                        
                           @if ($provvisorio->stato==0)  
                             <a href="edit_provvisorio/{{$provvisorio->id}}/{{$provvisorio->id_doc}}">
                               <button type="button" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Compilazione</button>
@@ -94,11 +119,11 @@ use Illuminate\Support\Facades\Storage;
                           @endif
                           @if ($provvisorio->stato==1)
                           <a href="#">
-                              <button type="button" onclick="to_def({{$provvisorio->id}},2,'{{$provvisorio->id_doc}}','{{$provvisorio->codice_associato_master}}')" class="btn btn-success btn-sm" style='width:250px'>
+                              <button type="button" onclick="to_def({{$provvisorio->id}},2,'{{$provvisorio->id_doc}}','{{$provvisorio->codice_associato_master}}')" class="btn btn-success btn-sm btn_def btn_def{{$provvisorio->id}}" id='btn_def_id{{$provvisorio->id}}' style='width:250px'>
                                <i class="fas fa-check-circle"></i> Trasforma in definitivo idoneo</button>
                             </a><hr>
                             <a href="#">
-                              <button type="button" onclick="to_def({{$provvisorio->id}},3,'{{$provvisorio->id_doc}}','{{$provvisorio->codice_associato_master}}')" class="btn btn-danger btn-sm" style='width:250px'>
+                              <button type="button" onclick="to_def({{$provvisorio->id}},3,'{{$provvisorio->id_doc}}','{{$provvisorio->codice_associato_master}}')" class="btn btn-danger btn-sm btn_def btn_def{$provvisorio->id}}" style='width:250px'  id='btn_def_nid{{$provvisorio->id}}'>
                               <i class="fas fa-times-circle"></i> Trasforma in definitivo NON idoneo</button>
                             </a>
                           @endif
@@ -168,6 +193,6 @@ use Illuminate\Support\Facades\Storage;
 	
 	
 
-	<script src="{{ URL::asset('/') }}dist/js/elenco_provvisori.js?ver=1.006"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_provvisori.js?ver=1.025"></script>
 
 @endsection
