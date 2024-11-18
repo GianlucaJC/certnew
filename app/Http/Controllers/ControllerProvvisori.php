@@ -104,6 +104,21 @@ class ControllerProvvisori extends Controller
         return view('all_views/provvisori/elenco_lotti',compact('elenco_lotti','data_lotti'));
     }
 
+    public function regole_custom() {
+        $fp=fopen('doc/regole.txt',"r");
+        $indice=0;
+        $resp=array();
+        while(!feof($fp)){
+            $line = fgets($fp);
+            $line=str_replace("|","",$line);
+            $info=explode(";",$line);
+            $resp[$info[0]]=$info[1];
+            $indice++;
+        }
+        fclose($fp);
+        return $resp;
+    }
+
 
     //function provvisoria per regole assegnazione master
     public function master_to_provv($cod_search) {
@@ -216,6 +231,9 @@ class ControllerProvvisori extends Controller
             $cod_s = $cod_search;
         } 
         //$92XXX-XX : non hanno certificato....poco male....
+
+        $regole_custom=$this->regole_custom();
+        if (array_key_exists($cod_search,$regole_custom)) $cod_s=$regole_custom[$cod_search];
 
         /*
 

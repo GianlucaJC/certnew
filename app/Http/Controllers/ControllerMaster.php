@@ -65,13 +65,17 @@ class ControllerMaster extends Controller
 		return $service;
 	}    
 
-	public function elenco_master() {
-       
-        $elenco_master=tbl_master::from('tbl_master as m')
-        ->select('m.id','m.id_doc','m.real_name','m.rev','m.data_rev','m.created_at','m.updated_at')
-        ->where('m.dele','=',0)
-->where('m.id','>',4000)
-        ->get(); 
+	public function elenco_master(Request $request) {
+        $cerca_coa=$request->input('cerca_coa');
+        $elenco_master=array();
+        if (strlen($cerca_coa)!=0) {
+            $elenco_master=tbl_master::from('tbl_master as m')
+            ->select('m.id','m.id_doc','m.real_name','m.rev','m.data_rev','m.created_at','m.updated_at')
+            ->where('m.dele','=',0)
+            ->where('m.real_name','like',"%$cerca_coa%")    
+            ->get(); 
+        } 
+        
 		return view('all_views/master/elenco_master',compact('elenco_master'));
     }
 

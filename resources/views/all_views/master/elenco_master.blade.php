@@ -52,6 +52,12 @@ use Illuminate\Support\Facades\Storage;
       <input name="_token" type="hidden" value="{{ csrf_token() }}" id='token_csrf'>
       <meta name="csrf-token" content="{{{ csrf_token() }}}">
 
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <button class="btn btn-outline-secondary" type="submit" name='btn_cerca'>Cerca CoA</button>
+          </div>
+          <input type="text" class="form-control" placeholder="Certificato da cercare" id='cerca_coa' name='cerca_coa'>
+        </div>      
 
         <div class="row">
           <div class="col-md-12">
@@ -129,7 +135,7 @@ use Illuminate\Support\Facades\Storage;
           </div>
 
         </div>
-        <div id='div_oper{{$master->id}}'>
+        <div id=''>
           <button type="button" class="btn btn-primary btn-sm" onclick='edit_rev(0)'>Nuovo Master</button>
         </div>
 
