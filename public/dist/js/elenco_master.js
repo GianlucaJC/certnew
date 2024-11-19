@@ -220,6 +220,38 @@ function dele_master(id_ref) {
     })   
 }
 
+function duplica_master(id_doc,id_ref) {
+	if (!confirm("Sicuri di duplicare il master?")) return false
+	name_master=$("#info_master"+id_ref).attr('data-name_master');	
+	name_clone=name_master+"-copia";
+
+	const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
+    const csrf = metaElements.length > 0 ? metaElements[0].content : "";
+
+    fetch("duplica_master", {
+        method: 'post',
+        headers: {
+          "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-CSRF-Token": csrf
+        },
+        body: "id_doc="+id_doc+"&name_clone="+name_clone,
+    })
+    .then(response => {
+        if (response.ok) {
+           return response.json();
+        }
+    })
+    .then(resp=>{
+		if (resp.header=="OK") {
+			alert("Master duplicato. Per trovarlo cercalo di nuovo con il nome originale")
+		}	
+		else
+			alert("Problema riscontrato durante la cancellazione")
+    })
+    .catch(status, err => {
+        return console.log(status, err);
+    })  	
+}
 function edit_rev(id_ref) {
     name_master=$("#info_master"+id_ref).attr('data-name_master');
 	rev=$("#info_master"+id_ref).attr('data-rev');

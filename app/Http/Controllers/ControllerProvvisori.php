@@ -1,5 +1,6 @@
 <?php
 namespace App\Http\Controllers;
+use App\Http\Controllers\ControllerEditProvvisori;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
@@ -234,53 +235,6 @@ class ControllerProvvisori extends Controller
 
         $regole_custom=$this->regole_custom();
         if (array_key_exists($cod_search,$regole_custom)) $cod_s=$regole_custom[$cod_search];
-
-        /*
-
-            
-            
-            
-                    
-            '''regole definite da utente
-            
-            regola = Percorso + "\regole.txt"
-            If Len(Dir(regola)) = 0 Then
-                Open Percorso + "\regole.txt" For Output As #1
-                Print #1, ""
-                Close #1
-            End If
-            Open regola For Input As #1
-            regole = Input(LOF(1), #1)
-            Close #1
-            regole = Replace(regole, Chr(13), "")
-            regole = Replace(regole, Chr(10), "")
-            
-            
-            If InStr(regole, ";") Then
-                regol = Split(regole, "|")
-                For kkk = LBound(regol) To UBound(regol) - 1
-                    reg_att = Split(regol(kkk), ";")
-                    reg1 = reg_att(0)
-                    reg2 = reg_att(1)
-            
-                    If UCase(cod_search) = UCase(reg1) And (Len(Trim(cod_search)) = Len(Trim(reg1))) Then
-                        cod_s = Replace(cod_search, reg1, reg2, , 1)
-                    End If
-                    
-                    
-                    If 1 = 2 Then
-                        If UCase(Mid(cod_search, 1, Len(reg1))) = UCase(reg1) Then
-                            cod_s = Replace(cod_search, reg1, reg2, , 1)
-                        End If
-                    End If
-                Next
-            End If
-            
-            
-            If Len(cod_s) = 0 Then cod_s = "?"
-            
-            cod_s = UCase(cod_s) 
-        */       
 
         $ris['regola_iniziale']=$reg;
         $master=$this->verifica_stato($cod_s,$opzioni);
@@ -609,6 +563,9 @@ class ControllerProvvisori extends Controller
            
             if ($id_master!="?") {
                 $file_id=$this->clonemaster($id_master,$lotto);
+                //compilazione automatica lotto, scadenza, etc.
+                $info_lotto=$this->info_lotto($lotto);
+                ControllerEditProvvisori::set_fill($file_id,$info_lotto);
                 $ckm=1;
             }
             //non ho usato lo Storage di google perchè è lento, vedi alternativa nella function clonemaster()
@@ -645,7 +602,29 @@ class ControllerProvvisori extends Controller
         echo json_encode($resp);
     }
 
-    function delete_file_drive($id) {
+    public function info_lotto($lotto){
+        $info=impegnolotti::from('impegnolotti as i')
+        ->select('i.DBdata','i.DBscadenza')
+        ->where('i.DBlotto','=',$lotto)
+        ->where('i.DBcontrollo','<>','!')
+        ->first();
+        $data="";$scadenza="";
+        if (isset($info->DBdata)) {
+            $data=$info->DBdata;
+            $scadenza=$info->DBscadenza;
+            $scadenza=str_replace("/",".",$scadenza);
+            $scadenza=str_replace("-",".",$scadenza);
+        }
+        $resp['lt']=$lotto;
+        $resp['pdate']=$data;
+        $resp['exp']=$scadenza;
+
+        return $resp;
+
+
+    }
+
+    public function delete_file_drive($id) {
         if ($id==null || strlen($id)==0) return false;
         $resp="OK";
         try {
@@ -689,6 +668,7 @@ class ControllerProvvisori extends Controller
         
     }    
 
+  
   
 
 }	

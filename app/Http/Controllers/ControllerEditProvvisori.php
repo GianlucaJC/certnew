@@ -24,7 +24,7 @@ class ControllerEditProvvisori extends Controller
     }
 
 
-	function getClient($scope="docs")
+	public static function getClient($scope="docs")
 	{
 		$client = new Client();
 		$client->setApplicationName('certOAuth');
@@ -81,8 +81,12 @@ class ControllerEditProvvisori extends Controller
 
 		$tags=$info['all_tag'];
 		$all_tag=$tags['tags'];
-		$tag_O="&lt;";
-		$tag_C="&gt;";
+		//$tag_O="&lt;";
+		//$tag_C="&gt;";
+
+        $tag_O="[";
+		$tag_C="]";
+
 		$entr=0;
 		foreach ($all_tag as $indice=>$tag_ref ) {
 			$entr++;
@@ -122,8 +126,12 @@ class ControllerEditProvvisori extends Controller
 		
 		$content=$str_all;
 		//$tags=$this->get_string_between($content,"<",">");
-		$tag_O="&lt;";
-		$tag_C="&gt;";
+		//$tag_O="&lt;";
+		//$tag_C="&gt;";
+
+		$tag_O="[";
+		$tag_C="]";
+
 		$tag_ref=$tag_O.$tag.$tag_C;
 		$tag_sost="<span style='background-color:yellow'>".$tag_ref."</span>";
 		$str_all=str_replace($tag_ref,$tag_sost,$str_all);
@@ -193,9 +201,13 @@ class ControllerEditProvvisori extends Controller
 		
 		$content=$str_all;
 		//$tags=$this->get_string_between($content,"<",">");
-		$tag_O="&lt;";
-		$tag_C="&gt;";
-		$sc1 = substr_count($content, $tag_O);
+		//$tag_O="&lt;";
+		//$tag_C="&gt;";
+
+		$tag_O="[";
+		$tag_C="]";
+
+        $sc1 = substr_count($content, $tag_O);
 		$sc2 = substr_count($content, $tag_C);
 
 		$num_tag=$sc1;
@@ -215,15 +227,71 @@ class ControllerEditProvvisori extends Controller
 	}
 
 
-	
+    public static function set_fill($documentId,$info_lotto) {
+		$client = ControllerEditprovvisori::getClient("docs");
+		$service = new \Google_Service_Docs($client);
+		//open doc and edit
+		$doc = $service->documents->get($documentId);
+		foreach ($info_lotto as $tag=>$modifiedText ) {
+            
+            $tag="[$tag]";
+            
+
+            $allText[]=$tag;
+            // Go through and create search/replace requests
+            $requests = $textsAlreadyDone = $forEasyCompare = [];
+            foreach ($allText as $currText) {
+                if (in_array($currText, $textsAlreadyDone, true)) {
+                    // If two identical pieces of text are found only search-and-replace it once - no reason to do it multiple times
+                    continue;
+                }
+
+                if (preg_match_all("/(.*?)($tag)(.*?)/", $currText, $matches, PREG_SET_ORDER)) {
+                    //NOTE: for simple static text searching you could of course just use strpos()
+                    // - and then loop on $matches wouldn't be necessary, and str_replace() would be simplified
+                    /*
+                    $modifiedText = $currText;
+
+                    foreach ($matches as $match) {
+                        $modifiedText = str_replace($match[0], $match[1] .$value. $match[3], $modifiedText);
+                    }
+                    */
+
+                    $forEasyCompare[] = ['old' => $currText, 'new' => $modifiedText];
+
+                    $replaceAllTextRequest = [
+                        'replaceAllText' => [
+                            'replaceText' => $modifiedText,
+                            'containsText' => [
+                                'text' => $currText,
+                                'matchCase' => true,
+                            ],
+                        ],
+                    ];
+
+                    $requests[] = new \Google_Service_Docs_Request($replaceAllTextRequest);
+                }
+                $textsAlreadyDone[] = $currText;
+            }
+
+            if (count($forEasyCompare)>0) {
+                    $batchUpdateRequest = new \Google_Service_Docs_BatchUpdateDocumentRequest(['requests' => $requests]);
+                    $response = $service->documents->batchUpdate($documentId, $batchUpdateRequest);
+                    //echo "OK";
+            }
+        }			
+        return true;
+    }
+
 	public function edit_doc($documentId,$posts) {
 		$client = $this->getClient("docs");
 		$service = new \Google_Service_Docs($client);
-		
+
+        
 		//open doc and edit
 		$doc = $service->documents->get($documentId);
-		foreach ($posts as $tag=>$value ) {
-				$tag="<$tag>";
+		foreach ($posts as $tag=>$modifiedText ) {
+				$tag="[$tag]";
 	
 					// Collect all pieces of text (see https://developers.google.com/docs/api/concepts/structure to understand the structure)
 					$allText = [];
@@ -269,10 +337,12 @@ class ControllerEditProvvisori extends Controller
 						if (preg_match_all("/(.*?)($tag)(.*?)/", $currText, $matches, PREG_SET_ORDER)) {
 							//NOTE: for simple static text searching you could of course just use strpos()
 							// - and then loop on $matches wouldn't be necessary, and str_replace() would be simplified
-							$modifiedText = $currText;
+							/*
+                            $modifiedText = $currText;
 							foreach ($matches as $match) {
 								$modifiedText = str_replace($match[0], $match[1] .$value. $match[3], $modifiedText);
 							}
+                            */
 
 							$forEasyCompare[] = ['old' => $currText, 'new' => $modifiedText];
 

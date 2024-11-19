@@ -56,6 +56,31 @@ class ControllerMaster extends Controller
         return $revisioni;
     }
 
+    public function duplica_master(Request $request) {
+        $id_doc=$request->input('id_doc');
+        $name_clone=$request->input('name_clone');
+
+        $client = new \Google_Client();
+        $client->setClientId(env('GOOGLE_DRIVE_CLIENT_ID'));
+        $client->setClientSecret(env('GOOGLE_DRIVE_CLIENT_SECRET'));
+        $client->refreshToken(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        $service = new \Google_Service_Drive($client);
+        
+        
+        $id_folder="1OWWv1lv28wsv3wJsIzqAeg4VQ4r1e8Fe"; //cartella master statica
+        $googleServiceDriveFile = new \Google_Service_Drive_DriveFile([
+            'name' => $name_clone,
+            'parents' => [$id_folder]
+        ]);
+
+        $fileId = $service->files->copy($id_doc, $googleServiceDriveFile, ['fields' => 'id']);
+        $esito['header']="OK";
+        $esito['fileId']=$fileId;
+        echo json_encode($esito);
+
+    }
+
+
 	public function open_doc($fileId) {
         $client = new \Google_Client();
         $client->setClientId(env('GOOGLE_DRIVE_CLIENT_ID'));
