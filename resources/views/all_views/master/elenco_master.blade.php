@@ -64,7 +64,7 @@ use Illuminate\Support\Facades\Storage;
             <table id='tbl_articoli' class="display">
                     <thead>
                       <tr>
-                      <th style='min-width:180px;max-width:140px'>Operazioni</th>
+                      <th style='min-width:210px;max-width:140px'>Operazioni</th>
                       <th>MASTER</th>
                       <th>Revisione</th>
                       <th>Creato il</th>
@@ -75,11 +75,19 @@ use Illuminate\Support\Facades\Storage;
                           <tr>
 
                             
-                              <td style='min-width:180px'>
+                              <td style='min-width:210px'>
                                 <div id='div_oper{{$master->id}}'>
-                                  <button type="button" class="btn btn-primary btn-sm" onclick='edit_rev({{$master->id}})'>Storicizza</button>
-                                  <button type="button" class="btn btn-secondary btn-sm" onclick="duplica_master('{{$master->id_doc}}',{{$master->id}})">Duplica</button>
-                                  <button type="button" class="btn btn-danger btn-sm" onclick='dele_master({{$master->id}})' >Elimina</button>
+                                  @if(1==2)
+                                    <button type="button" class="btn btn-primary btn-sm btnall" onclick='edit_rev({{$master->id}})'>Storicizza</button>
+                                  @endif
+                                  
+                                  @if($master->id_clone_from==null) 
+                                    <button type="button" class="btn btn-secondary btn-sm btnall" id='btn_dup{{$master->id}}' onclick="duplica_master('{{$master->id_doc}}',{{$master->id}})">Duplica</button>
+                                  @else
+                                    <button type="button" class="btn btn-primary btn-sm btnall" onclick='edit_rev({{$master->id}})'>Change Master</button>
+                                  @endif  
+
+                                  <button type="button" class="btn btn-danger btn-sm btnall" onclick='dele_master({{$master->id}})' >Elimina</button>
                                 </div>
                               </td>
                             
@@ -123,7 +131,7 @@ use Illuminate\Support\Facades\Storage;
                     </tbody>
                     <tfoot>
                       <tr>
-                        <th style='min-width:180px'></th>
+                        <th style='min-width:210px'></th>
                         <th>MASTER</th>
                         <th>Revisione</th>
                         <th>Creato il</th>
@@ -196,6 +204,6 @@ use Illuminate\Support\Facades\Storage;
 	
 	
 
-	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.045"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.049"></script>
 
 @endsection

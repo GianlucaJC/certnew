@@ -76,10 +76,61 @@ class ControllerMaster extends Controller
         $fileId = $service->files->copy($id_doc, $googleServiceDriveFile, ['fields' => 'id']);
         $esito['header']="OK";
         $esito['fileId']=$fileId;
+
+        $check_dele=tbl_master::select('id_doc')->where('id_clone_from','=',$id_doc)->first();
+        if (isset($check_dele->id_doc)) {
+            $id_doc_dele=$check_dele->id_doc;
+            $delete = Storage::disk('google')->delete($id_doc_dele);
+        }     
+
+        $dele=tbl_master::from('tbl_master')
+        ->where('id_clone_from','=',$id_doc)   
+        ->delete(); 
+
+
+        
+        
+        
+        $tbl_master= new tbl_master;
+        $tbl_master->id_doc=$fileId->id;
+        $tbl_master->id_clone_from=$id_doc;
+        $tbl_master->real_name=$name_clone;
+        $tbl_master->save();
+      
+        //$esito['cont']=$this->get_cont($id_doc);
         echo json_encode($esito);
 
     }
 
+
+    public function get_cont($documentId) {
+        $client = new \Google_Client();
+        $client->setClientId(env('GOOGLE_DRIVE_CLIENT_ID'));
+        $client->setClientSecret(env('GOOGLE_DRIVE_CLIENT_SECRET'));
+        $client->refreshToken(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        $service = new \Google_Service_Drive($client);
+
+        $ret=array();
+        try {
+            // Retrieve the document
+            $document = $service->documents->get($documentId);
+            $content = $document->getBody()->getContent();
+        
+            // Extract and display text content
+            foreach ($content as $element) {
+                if (($element->getParagraph()->getElements())!==null) {
+                    foreach ($element->getParagraph()->getElements() as $textElement) {
+                        if ($textElement->getTextRun()) {
+                           $ret[]=$textElement->getTextRun()->getContent();
+                        }
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            echo 'Error: ' . $e->getMessage();
+        }        
+        return $ret;
+    }
 
 	public function open_doc($fileId) {
         $client = new \Google_Client();
@@ -95,7 +146,7 @@ class ControllerMaster extends Controller
         $elenco_master=array();
         if (strlen($cerca_coa)!=0) {
             $elenco_master=tbl_master::from('tbl_master as m')
-            ->select('m.id','m.id_doc','m.real_name','m.rev','m.data_rev','m.created_at','m.updated_at')
+            ->select('m.id','m.id_doc','m.id_clone_from','m.real_name','m.rev','m.data_rev','m.created_at','m.updated_at')
             ->where('m.dele','=',0)
             ->where('m.real_name','like',"%$cerca_coa%")    
             ->get(); 

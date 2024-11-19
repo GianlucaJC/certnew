@@ -224,6 +224,8 @@ function duplica_master(id_doc,id_ref) {
 	if (!confirm("Sicuri di duplicare il master?")) return false
 	name_master=$("#info_master"+id_ref).attr('data-name_master');	
 	name_clone=name_master+"-copia";
+    $("#btn_dup"+id_ref).text('Attendere...');
+    $(".btnall").attr('disabled', true);
 
 	const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
     const csrf = metaElements.length > 0 ? metaElements[0].content : "";
@@ -243,7 +245,9 @@ function duplica_master(id_doc,id_ref) {
     })
     .then(resp=>{
 		if (resp.header=="OK") {
-			alert("Master duplicato. Per trovarlo cercalo di nuovo con il nome originale")
+            $("#btn_dup"+id_ref).text('Duplica');
+            $(".btnall").attr('disabled', false);            
+			alert("Master duplicato. Per trovarlo digita nella ricerca il nome originale")
 		}	
 		else
 			alert("Problema riscontrato durante la cancellazione")
