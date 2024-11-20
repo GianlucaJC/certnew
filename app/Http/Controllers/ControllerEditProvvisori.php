@@ -81,11 +81,11 @@ class ControllerEditProvvisori extends Controller
 
 		$tags=$info['all_tag'];
 		$all_tag=$tags['tags'];
-		//$tag_O="&lt;";
-		//$tag_C="&gt;";
+		$tag_O="&lt;";
+		$tag_C="&gt;";
 
-        $tag_O="[";
-		$tag_C="]";
+        //$tag_O="[";
+		//$tag_C="]";
 
 		$entr=0;
 		foreach ($all_tag as $indice=>$tag_ref ) {
@@ -126,11 +126,11 @@ class ControllerEditProvvisori extends Controller
 		
 		$content=$str_all;
 		//$tags=$this->get_string_between($content,"<",">");
-		//$tag_O="&lt;";
-		//$tag_C="&gt;";
+		$tag_O="&lt;";
+		$tag_C="&gt;";
 
-		$tag_O="[";
-		$tag_C="]";
+		//$tag_O="[";
+		//$tag_C="]";
 
 		$tag_ref=$tag_O.$tag.$tag_C;
 		$tag_sost="<span style='background-color:yellow'>".$tag_ref."</span>";
@@ -201,11 +201,11 @@ class ControllerEditProvvisori extends Controller
 		
 		$content=$str_all;
 		//$tags=$this->get_string_between($content,"<",">");
-		//$tag_O="&lt;";
-		//$tag_C="&gt;";
+		$tag_O="&lt;";
+		$tag_C="&gt;";
 
-		$tag_O="[";
-		$tag_C="]";
+		//$tag_O="[";
+		//$tag_C="]";
 
         $sc1 = substr_count($content, $tag_O);
 		$sc2 = substr_count($content, $tag_C);
@@ -234,7 +234,7 @@ class ControllerEditProvvisori extends Controller
 		$doc = $service->documents->get($documentId);
 		foreach ($info_lotto as $tag=>$modifiedText ) {
             
-            $tag="[$tag]";
+            $tag="<$tag>";
             
 
             $allText[]=$tag;
@@ -291,7 +291,7 @@ class ControllerEditProvvisori extends Controller
 		//open doc and edit
 		$doc = $service->documents->get($documentId);
 		foreach ($posts as $tag=>$modifiedText ) {
-				$tag="[$tag]";
+				$tag="<$tag>";
 	
 					// Collect all pieces of text (see https://developers.google.com/docs/api/concepts/structure to understand the structure)
 					$allText = [];
