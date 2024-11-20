@@ -220,6 +220,42 @@ function dele_master(id_ref) {
     })   
 }
 
+function change_master(id_doc,id_clone_from,id_ref) {
+	if (!confirm("Sicuri di rendere il clone master ufficiale?")) return false
+    $("#btn_change"+id_ref).text('Attendere...');
+    $(".btnall").attr('disabled', true);
+
+	const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
+    const csrf = metaElements.length > 0 ? metaElements[0].content : "";
+
+    fetch("change_master", {
+        method: 'post',
+        headers: {
+          "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-CSRF-Token": csrf
+        },
+        body: "id_doc="+id_doc+"&id_clone_from="+id_clone_from,
+    })
+    .then(response => {
+        if (response.ok) {
+           return response.json();
+        }
+    })
+    .then(resp=>{
+		if (resp.header=="OK") {
+           $("#tr"+id_ref).remove()
+            $(".btnall").attr('disabled', false);            
+			alert("Master associato!")
+            window.location.reload();
+		}	
+		else
+			alert("Problema riscontrato durante la cancellazione")
+    })
+    .catch(status, err => {
+        return console.log(status, err);
+    })  	
+}
+
 function duplica_master(id_doc,id_ref) {
 	if (!confirm("Sicuri di duplicare il master?")) return false
 	name_master=$("#info_master"+id_ref).attr('data-name_master');	
@@ -247,7 +283,8 @@ function duplica_master(id_doc,id_ref) {
 		if (resp.header=="OK") {
             $("#btn_dup"+id_ref).text('Duplica');
             $(".btnall").attr('disabled', false);            
-			alert("Master duplicato. Per trovarlo digita nella ricerca il nome originale")
+			alert("Master duplicato.")
+            window.location.reload();
 		}	
 		else
 			alert("Problema riscontrato durante la cancellazione")

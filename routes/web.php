@@ -75,6 +75,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('new_master', [ 'as' => 'new_master', 'uses' => 'App\Http\Controllers\ControllerMaster@new_master']);
     Route::post('duplica_master', [ 'as' => 'duplica_master', 'uses' => 'App\Http\Controllers\ControllerMaster@duplica_master']);
+    Route::post('change_master', [ 'as' => 'change_master', 'uses' => 'App\Http\Controllers\ControllerMaster@change_master']);
     
     Route::get('load_rev', [ 'as' => 'load_rev', 'uses' => 'App\Http\Controllers\ControllerMaster@load_rev']);
     Route::post('load_rev', [ 'as' => 'load_rev', 'uses' => 'App\Http\Controllers\ControllerMaster@load_rev']);

@@ -72,7 +72,7 @@ use Illuminate\Support\Facades\Storage;
                     </thead>
                     <tbody>
                       @foreach($elenco_master as $master)
-                          <tr>
+                          <tr id='tr{{$master->id}}'>
 
                             
                               <td style='min-width:210px'>
@@ -84,8 +84,12 @@ use Illuminate\Support\Facades\Storage;
                                   @if($master->id_clone_from==null) 
                                     <button type="button" class="btn btn-secondary btn-sm btnall" id='btn_dup{{$master->id}}' onclick="duplica_master('{{$master->id_doc}}',{{$master->id}})">Duplica</button>
                                   @else
-                                    <button type="button" class="btn btn-primary btn-sm btnall" onclick='edit_rev({{$master->id}})'>Change Master</button>
+                                    <button type="button" class="btn btn-primary btn-sm btnall" id='btn_change{{$master->id}}'' onclick="change_master('{{$master->id_doc}}','{{$master->id_clone_from}}',{{$master->id}})">Change Master</button>
                                   @endif  
+                                  @if($master->obsoleti=="2") 
+                                    <button type="button" class="btn btn-warning btn-sm btnall" >Vedi Obsoleti</button>
+                                  @endif  
+
 
                                   <button type="button" class="btn btn-danger btn-sm btnall" onclick='dele_master({{$master->id}})' >Elimina</button>
                                 </div>
@@ -204,6 +208,6 @@ use Illuminate\Support\Facades\Storage;
 	
 	
 
-	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.049"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.052"></script>
 
 @endsection
