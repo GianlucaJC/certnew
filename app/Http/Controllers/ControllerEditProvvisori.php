@@ -54,12 +54,21 @@ class ControllerEditProvvisori extends Controller
 	public function edit_provvisorio($id,$id_provv) {
 		$all_tag=$this->all_tag($id_provv,"");
 
-        $info_provv=cert_provvisori::from('cert_provvisori as p')
-        ->select('p.id_doc','p.lotto','p.codice','p.codice_associato_master','p.stato','p.created_at','p.updated_at')
-        ->where('id','=',$id)
-        ->get(); 
+		$info_provv=cert_provvisori::from('cert_provvisori')
+		->select('id_doc','lotto','codice','codice_associato_master','stato','created_at','updated_at', 'real_name')
+		->where('id_doc','=',$id_provv)
+		->first(); 
 
-		return view('all_views/provvisori/edit_provvisorio',compact('info_provv','id_provv','all_tag'));
+		$master_doc_id = null;
+		if ($info_provv) {
+			$master_real_name = str_replace('.doc', '', $info_provv->real_name);
+			$master = tbl_master::where('real_name', $master_real_name)->first();
+			if ($master) {
+				$master_doc_id = $master->id_doc;
+			}
+		}
+
+		return view('all_views/provvisori/edit_provvisorio',compact('info_provv','id_provv','all_tag', 'master_doc_id'));
     } 
 
 	function load_clone(Request $request) {
@@ -74,10 +83,11 @@ class ControllerEditProvvisori extends Controller
 			<input type="hidden" name="url" id="url" value="'.url('/').'">';
 
 		$str_all.=$info['str_all'];
-		
+
 		//alcuni caratteri vengono trasformati in simboli
 		//il simbolo di copyright in un cuore!
 		$str_all=str_replace("Symbol","Belleza",$str_all); 
+
 
 		$tags=$info['all_tag'];
 		$all_tag=$tags['tags'];
@@ -90,9 +100,17 @@ class ControllerEditProvvisori extends Controller
 		$entr=0;
 		foreach ($all_tag as $indice=>$tag_ref ) {
 			$entr++;
-			$tag=str_replace($tag_O,"",$tag_ref);$tag=str_replace($tag_C,"",$tag);
-			$tag_sost="<input type='text' class='dati' data-id_ref='$tag' style='width:80px'>";
-			$str_all=str_replace($tag_ref,$tag_sost,$str_all);
+			// Pulisce il tag dai delimitatori per poterlo analizzare
+			$tag = str_replace(['&lt;', '&gt;', '$'], '', $tag_ref);
+
+			// Controlla se il tag è uno di quelli riservati per la firma.
+			// Se lo è, salta la sostituzione con un campo di input.
+			// Il tag rimarrà evidenziato in giallo ma non sarà editabile.
+			if (in_array($tag, ['firma', 'firma_d'])) {
+				continue; // Salta al prossimo tag
+			}
+			$tag_sost = $this->render_input($tag_ref, $tag, $indice);
+			$str_all = str_replace($tag_ref, $tag_sost, $str_all);
 		}	
 		//il relativo file JS che gestiste il provvisorio è in dist/js/add_script.js che viene iniettato tramite iframe
 		$str_all.="<hr>";
@@ -100,21 +118,68 @@ class ControllerEditProvvisori extends Controller
 		if ($entr>0) {
 			$str_all.="
 				<center>
-					<button type='button' onclick=\"save_all('$doc_id')\"  name='btn_save_cont' id='btn_save_cont'>Salva dati</button> 
+					<button type='button' class='btn btn-primary' onclick=\"save_all('$doc_id')\"  name='btn_save_cont' id='btn_save_cont'>Salva dati</button> 
 				</center>	
 			";
 		} else {
 			$str_all.="
-				<center>
-					<button type='button' onclick=\"save_to_ready('$doc_id')\"  name='btn_ready' id='btn_ready'>Passa documento in 'pronto per trasformazione definitivo'</button> 
-				</center>	
+				<div class=\"alert alert-success mt-3\" role=\"alert\">
+					<h4 class=\"alert-heading\">Compilazione Completata!</h4>
+					<p>Tutti i tag del documento sono stati compilati. Ora puoi passare questo certificato allo stato \"Pronto\" dalla pagina \"Elenco Provvisori\".</p>
+				</div>
 			";
 		}
 
+		// Aggiungo la modale di conferma per il cambio di stato
+		$str_all.='
+			<div class="modal fade" id="confirmStateChangeModal" tabindex="-1" aria-labelledby="confirmStateChangeModalLabel" aria-hidden="true">
+			  <div class="modal-dialog">
+				<div class="modal-content">
+				  <div class="modal-header">
+					<h5 class="modal-title" id="confirmStateChangeModalLabel">Conferma Cambio Stato</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				  </div>
+				  <div class="modal-body">
+					Sei sicuro di voler passare il documento allo stato "pronto per trasformazione definitivo"? L\'operazione non è reversibile da questa interfaccia.
+				  </div>
+				  <div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+					<button type="button" class="btn btn-success" id="confirmStateChangeBtn">Conferma</button>
+				  </div>
+				</div>
+			  </div>
+			</div>';
 
 		$info['content']=$str_all;
 		return $info;		
 	}	
+
+	function render_input($tag,$ref_tag,$sca) {
+		$place = $tag; // Default placeholder
+		$html = "";
+
+		if ($ref_tag == "pdate" || $ref_tag == "exp" || $ref_tag == "fcont") {
+			if ($ref_tag == "pdate") $place = "Data produzione";
+			if ($ref_tag == "exp") $place = "Data scadenza";
+			if ($ref_tag == "fcont") $place = "Data approvazione";
+			$html = "<input type='date' class='dati' data-id_ref='$ref_tag' id='tg$sca' data-id='tg$sca' data-tag='$ref_tag' style='width:150px' placeholder='$place'>";
+		} elseif ($ref_tag == "id" || $ref_tag == "nid") {
+			$lbl = ($ref_tag == "id") ? "Idoneo" : "Non idoneo";
+			$html = "<div class='form-group'>
+						<label for='tg$sca'>$lbl</label>
+						<select class='form-select dati' data-id_ref='$ref_tag' id='tg$sca' data-id='tg$sca' data-tag='$ref_tag'>
+							<option value=''>-- Seleziona --</option>
+							<option value='☑'>Idoneo (con spunta)</option>
+							<option value='☐'>Non Idoneo (senza spunta)</option>
+						</select>
+					</div>";
+		} else {
+			// Questo blocco gestisce 'lt' e qualsiasi altro tag generico come input di testo.
+			if ($ref_tag == "lt") $place = "Lotto"; // Placeholder specifico per 'lt'
+			$html = "<input type='text' class='dati' data-id_ref='$ref_tag' id='tg$sca' data-id='tg$sca' data-tag='$ref_tag' style='width:80px' placeholder='$place'>";
+		}
+		return $html;
+	}
 
 	function view_tag(Request $request) {
 		$doc_id=$request->input('doc_id');
@@ -143,6 +208,36 @@ class ControllerEditProvvisori extends Controller
 		$posts=request()->post();
 		$doc_id=$request->input('doc_id');
 		$this->edit_doc($doc_id,$posts);
+
+		// --- INIZIO CALCOLO PERCENTUALE COMPLETAMENTO ---
+
+		// 1. Conto i tag totali originali (quelli associati al master)
+		$provvisorio = cert_provvisori::where('id_doc', $doc_id)->first(); // Lo uso per l'update finale
+
+		if ($provvisorio) {
+			// Eseguo una join per trovare l'id_doc del master in modo univoco
+			$master = DB::table('cert_provvisori as p')
+				->join('tbl_master as m', DB::raw("REPLACE(p.real_name, '.doc', '')"), '=', 'm.real_name')
+				->where('p.id_doc', $doc_id)
+				->select('m.id_doc')
+				->first();
+
+			if ($master) {
+				$info_master_doc = $this->open_doc($master->id_doc);
+				$tags_info_totali = $this->all_tag($master->id_doc, $info_master_doc['str_all']);
+				$tags_totali = $tags_info_totali['num_tag'];
+
+				// 2. Conto i tag rimasti nel documento provvisorio appena modificato
+				$tags_info_correnti = $this->all_tag($doc_id, ""); // Riapro il documento per contare i tag
+				$tags_rimasti = $tags_info_correnti['num_tag'];
+
+				// 3. Calcolo e aggiorno la percentuale
+				$perc_complete = ($tags_totali > 0) ? round((($tags_totali - $tags_rimasti) / $tags_totali) * 100) : 0;
+				
+				$provvisorio->update(['perc_complete' => $perc_complete]);
+			}
+		}
+		// --- FINE CALCOLO PERCENTUALE COMPLETAMENTO ---
 	}
 
 	function save_to_ready(Request $request) {
@@ -200,30 +295,26 @@ class ControllerEditProvvisori extends Controller
 		if (strlen($str_all)==0) {$info=$this->open_doc($fileId);$str_all=$info['str_all'];}
 		
 		$content=$str_all;
-		//$tags=$this->get_string_between($content,"<",">");
+
 		$tag_O="&lt;";
 		$tag_C="&gt;";
 
-		//$tag_O="[";
-		//$tag_C="]";
+		// Regex unificata per trovare tutti i tipi di tag in una sola passata.
+		// Supporta sia il formato classico (&lt;tag&gt;) che quello robusto ($tag$).
+		// Questa logica è ora allineata a quella usata in edit_provvisorio.blade.php
+		$pattern = '/(?:&lt;[a-zA-Z][^&]*?&gt;|\$[a-zA-Z_0-9]+\$)/';
+		preg_match_all($pattern, $content, $matches);
 
-        $sc1 = substr_count($content, $tag_O);
-		$sc2 = substr_count($content, $tag_C);
+		// $matches[0] contiene i tag completi (es. &lt;fcont&gt;)
+		// $matches[1] contiene solo il contenuto del tag (es. fcont)
+		$tags = $matches[0]; // Restituiamo i tag completi come prima
+		$num_tag = count($tags);
 
-		$num_tag=$sc1;
-		$start=0;
-		for ($s=0;$s<=$num_tag-1;$s++) {
-			$content_tag = $this->get_string_between($content, $tag_O , $tag_C);
-			$rep=$tag_O.$content_tag.$tag_C;
-			//ogni iterazione deve comportare la sostituzione di un tag con qualcosa (se ciò non avviene la function get_string_between riceve sempre stessi parametri)
-			$content=str_replace($rep,"",$content);
-			$tags[]=trim(strip_tags($rep));
-		}	
 		$info=array();
 		$info['num_tag']=$num_tag;
 		$info['tags']=$tags;
 		$info['content']=$str_all;
-		return $info;
+		return $info; // num_tag, tags, content
 	}
 
 
@@ -291,7 +382,18 @@ class ControllerEditProvvisori extends Controller
 		//open doc and edit
 		$doc = $service->documents->get($documentId);
 		foreach ($posts as $tag=>$modifiedText ) {
-				$tag="<$tag>";
+				// Ricostruisce il tag per la ricerca.
+				// Se il nome del tag contiene '_', è probabile che sia uno dei nuovi tag con '$' (es. $firma_d$).
+				// Altrimenti, usa il vecchio formato con le parentesi angolari.
+				if (strpos($tag, '_') !== false || in_array($tag, ['firma', 'firma_d'])) {
+				// Se il testo modificato proviene da un input (non da un menu a tendina),
+				// è probabile che sia un tag con le parentesi angolari.
+				// Altrimenti, è uno dei nuovi tag con '$'.
+				if (in_array($tag, ['id', 'nid'])) {
+					$tag = '$' . $tag . '$';
+				} else {
+					$tag="<$tag>";
+				}
 	
 					// Collect all pieces of text (see https://developers.google.com/docs/api/concepts/structure to understand the structure)
 					$allText = [];
@@ -372,12 +474,10 @@ class ControllerEditProvvisori extends Controller
 							$response = $service->documents->batchUpdate($documentId, $batchUpdateRequest);
 							//echo "OK";
 					}
-		}			
+				}			
+		}
 		$resp=array();
 		$resp['header']="OK";
 		echo json_encode($resp);
-	
 	}
-    
-
-}	
+}

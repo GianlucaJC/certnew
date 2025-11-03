@@ -195,6 +195,93 @@ function to_def_all(from) {
 
 }
 
+function save_to_ready_from_list(doc_id, provvisorio_id) {
+	// Mostra la modale di conferma
+	$('#confirmReadyModal').modal('show');
+
+	// Gestisce il click sul pulsante di conferma della modale
+	$("#confirmReadyBtn").off('click').on('click', function() {
+		// Nasconde la modale
+		$('#confirmReadyModal').modal('hide');
+		// Esegue l'azione
+		execute_save_to_ready(doc_id, provvisorio_id);
+	});
+}
+
+function execute_save_to_ready(doc_id, provvisorio_id) {
+	$("#btn_ready_list" + provvisorio_id).html("<i class='fas fa-spinner fa-spin'></i> Attendere...");
+	$("#btn_ready_list" + provvisorio_id).attr('disabled', true);
+	
+	url=$("#url").val()
+	const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
+	const csrf = metaElements.length > 0 ? metaElements[0].content : "";
+  
+	fetch(url+"/save_to_ready", {
+		method: 'post',
+		headers: {
+		  "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+		  "X-CSRF-Token": csrf
+		},
+		body:"doc_id="+doc_id,
+	})
+	.then(response => {
+		if (response.ok) {
+		   return response.json();
+		}
+	})
+	.then(resp=>{
+		$("#btn_ready_list"+provvisorio_id).html('<i class="fas fa-arrow-circle-right"></i> Passa a Pronto');
+		if (resp.header=="OK") {
+			// Recupero il codice master dalla riga della tabella per passarlo ai nuovi bottoni
+			var codice_master = $("#tr"+provvisorio_id).find("td").eq(4).text();
+
+			// HTML per la prima cella (Stato)
+			var checkbox_html = `
+				<center>
+				  <div class="form-check">
+					<input class="form-check-input sele_ready" type="checkbox" 
+					  data-info_sele='${provvisorio_id}'
+					  data-id_provv='${provvisorio_id}'
+					  data-id_doc='${doc_id}'
+					  data-codice_master='${codice_master}'
+					  checked id='sele_${provvisorio_id}'
+					/>
+					<label for='sele_${provvisorio_id}'>Pronto</label>
+				  </div>                                
+			  </center>
+			`;
+			// HTML per la seconda cella (Operazioni)
+			var buttons_html = `
+				<a href="#">
+					<button type="button" onclick="to_def(${provvisorio_id},2,'${doc_id}','${codice_master}')" class="btn btn-success btn-sm btn_def btn_def${provvisorio_id}" id='btn_def_id${provvisorio_id}' style='width:250px'>
+					 <i class="fas fa-check-circle"></i> Trasforma in definitivo idoneo</button>
+				</a><hr>
+				<a href="#">
+					<button type="button" onclick="to_def(${provvisorio_id},3,'${doc_id}','${codice_master}')" class="btn btn-danger btn-sm btn_def btn_def${provvisorio_id}" style='width:250px'  id='btn_def_nid${provvisorio_id}'>
+					<i class="fas fa-times-circle"></i> Trasforma in definitivo NON idoneo</button>
+				</a>
+			`;
+
+			// Aggiorno la prima cella (Stato)
+			$("#btn_ready_list"+provvisorio_id).parent().html(checkbox_html);
+			// Aggiorno la seconda cella (Operazioni)
+			$("#tr"+provvisorio_id).find("td").eq(1).html(buttons_html);
+
+			alert("Stato assegnato!");
+		} else {
+			alert("Errore durante l'aggiornamento.");
+			$("#btn_ready_list"+provvisorio_id).html('<i class="fas fa-arrow-circle-right"></i> Passa a Pronto');
+			$("#btn_ready_list"+provvisorio_id).attr('disabled', false);
+		}
+	})
+	.catch(err => {
+		console.log(err);
+		alert("Si è verificato un errore di rete.");
+		$("#btn_ready_list"+provvisorio_id).html('<i class="fas fa-arrow-circle-right"></i> Passa a Pronto');
+		$("#btn_ready_list"+provvisorio_id).attr('disabled', false);
+	})	
+}
+
 function to_def(id_provv,from,id_doc,codice_master) {
 	txt=""
 	if (from=="2") 

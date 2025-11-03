@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\GuidaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,15 +15,16 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [ 'as' => 'firstpage', 'uses' => 'App\Http\Controllers\MainController@firstpage']);
+Route::get('/firstpage', [ 'as' => 'firstpage', 'uses' => 'App\Http\Controllers\MainController@firstpage']);
 
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/guida-operatore', [GuidaController::class, 'index'])->middleware(['auth', 'verified'])->name('guida_operatore');
+    
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -39,7 +41,6 @@ Route::middleware('auth')->group(function () {
     Route::post('dele_master', [ 'as' => 'dele_master', 'uses' => 'App\Http\Controllers\ControllerMaster@dele_master']);
     Route::post('save_master', [ 'as' => 'save_master', 'uses' => 'App\Http\Controllers\ControllerMaster@save_master']);
 
-    
     Route::get('elenco_provvisori', [ 'as' => 'elenco_provvisori', 'uses' => 'App\Http\Controllers\ControllerProvvisori@elenco_provvisori']);
 
     Route::get('edit_provvisorio/{id}/{id_provv}', [ 'as' => 'edit_provvisorio', 'uses' => 'App\Http\Controllers\ControllerEditProvvisori@edit_provvisorio']);

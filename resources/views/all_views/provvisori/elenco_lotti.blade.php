@@ -72,6 +72,12 @@
       </div>  
       
       <hr>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" value="" id="sele_all" checked>
+        <label class="form-check-label" for="sele_all">
+          Seleziona/Deseleziona tutti
+        </label>
+      </div>
         <div class="row">
           <div class="col-md-12">
 		  
@@ -138,6 +144,26 @@
   </div>
   <!-- /.content-wrapper -->
   
+  <!-- Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmModalLabel">Conferma Creazione Provvisori</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Sicuri di creare i certificati provvisori per gli elementi selezionati?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-primary" onclick="crea_provv_confirm()">Conferma</button>
+      </div>
+    </div>
+  </div>
+</div>
  @endsection
  
  @section('content_plugin')
@@ -164,6 +190,6 @@
 	
 	
 
-	<script src="{{ URL::asset('/') }}dist/js/elenco_lotti.js?ver=1.049"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_lotti.js?ver=1.057"></script>
 
 @endsection

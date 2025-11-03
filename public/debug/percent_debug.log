@@ -1,0 +1,144 @@
+2025-10-31 11:14:48 - [set_fill] Inizio calcolo percentuale per doc_id: 1eX5qZ1MG37FkjgDKUMTXZmPTlA1oqfNhcKq1EhkHUVA
+2025-10-31 11:14:48 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1eX5qZ1MG37FkjgDKUMTXZmPTlA1oqfNhcKq1EhkHUVA)
+2025-10-31 11:14:48 - [set_fill] Master NON trovato per doc_id: 1eX5qZ1MG37FkjgDKUMTXZmPTlA1oqfNhcKq1EhkHUVA
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:14:58 - [set_fill] Inizio calcolo percentuale per doc_id: 1oE8wMiFxGPbYhkGcLxWDY5ubf59kNIvxG-v_C5KHoag
+2025-10-31 11:14:58 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1oE8wMiFxGPbYhkGcLxWDY5ubf59kNIvxG-v_C5KHoag)
+2025-10-31 11:14:58 - [set_fill] Master NON trovato per doc_id: 1oE8wMiFxGPbYhkGcLxWDY5ubf59kNIvxG-v_C5KHoag
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:15:06 - [set_fill] Inizio calcolo percentuale per doc_id: 1QLVCniyYdB6sdjTnXE9dN9KvhNcZBesZE_aV_F0CDmA
+2025-10-31 11:15:06 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1QLVCniyYdB6sdjTnXE9dN9KvhNcZBesZE_aV_F0CDmA)
+2025-10-31 11:15:06 - [set_fill] Master NON trovato per doc_id: 1QLVCniyYdB6sdjTnXE9dN9KvhNcZBesZE_aV_F0CDmA
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:15:13 - [set_fill] Inizio calcolo percentuale per doc_id: 1wwsbf878qEdpSnMTFAfKg50felCKbUNtJ3AnLvRTjVQ
+2025-10-31 11:15:13 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1wwsbf878qEdpSnMTFAfKg50felCKbUNtJ3AnLvRTjVQ)
+2025-10-31 11:15:13 - [set_fill] Master NON trovato per doc_id: 1wwsbf878qEdpSnMTFAfKg50felCKbUNtJ3AnLvRTjVQ
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:15:24 - [set_fill] Inizio calcolo percentuale per doc_id: 1UzCRqys-ZOjown-ekJQ2NkiFFZac-Thgnaxg8KzRBN8
+2025-10-31 11:15:24 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1UzCRqys-ZOjown-ekJQ2NkiFFZac-Thgnaxg8KzRBN8)
+2025-10-31 11:15:24 - [set_fill] Master NON trovato per doc_id: 1UzCRqys-ZOjown-ekJQ2NkiFFZac-Thgnaxg8KzRBN8
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:15:32 - [set_fill] Inizio calcolo percentuale per doc_id: 12GJjVSL6w7pKsfW5EqnVX6uwqv23uxqy9o3WFq9ejm8
+2025-10-31 11:15:32 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 12GJjVSL6w7pKsfW5EqnVX6uwqv23uxqy9o3WFq9ejm8)
+2025-10-31 11:15:32 - [set_fill] Master NON trovato per doc_id: 12GJjVSL6w7pKsfW5EqnVX6uwqv23uxqy9o3WFq9ejm8
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:15:40 - [set_fill] Inizio calcolo percentuale per doc_id: 1nig3NOfVNlkR7LXYunxFG6NR_lQ8iVQDpNnqW54RTgU
+2025-10-31 11:15:40 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1nig3NOfVNlkR7LXYunxFG6NR_lQ8iVQDpNnqW54RTgU)
+2025-10-31 11:15:40 - [set_fill] Master NON trovato per doc_id: 1nig3NOfVNlkR7LXYunxFG6NR_lQ8iVQDpNnqW54RTgU
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:15:54 - [set_fill] Inizio calcolo percentuale per doc_id: 11YlHYXSK2RCbqUsg0FF1lqxHYlWpg8czIhRIZHvWvCg
+2025-10-31 11:15:54 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 11YlHYXSK2RCbqUsg0FF1lqxHYlWpg8czIhRIZHvWvCg)
+2025-10-31 11:15:54 - [set_fill] Master NON trovato per doc_id: 11YlHYXSK2RCbqUsg0FF1lqxHYlWpg8czIhRIZHvWvCg
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:16:02 - [set_fill] Inizio calcolo percentuale per doc_id: 1xxQw6STV5Eqkrt2u3Z-ypScPAiG9xpvga7Gm_jgA_Mk
+2025-10-31 11:16:02 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1xxQw6STV5Eqkrt2u3Z-ypScPAiG9xpvga7Gm_jgA_Mk)
+2025-10-31 11:16:02 - [set_fill] Master NON trovato per doc_id: 1xxQw6STV5Eqkrt2u3Z-ypScPAiG9xpvga7Gm_jgA_Mk
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:22:46 - [set_fill] Inizio calcolo percentuale per doc_id: 1KBbH_yxRZhJ4deuTCMeL5pLcsDYikTGeaTqVisbNtAA
+2025-10-31 11:22:46 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1KBbH_yxRZhJ4deuTCMeL5pLcsDYikTGeaTqVisbNtAA)
+2025-10-31 11:22:46 - [set_fill] Master NON trovato per doc_id: 1KBbH_yxRZhJ4deuTCMeL5pLcsDYikTGeaTqVisbNtAA
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:22:55 - [set_fill] Inizio calcolo percentuale per doc_id: 1TP0vKyHGzSsjIhAQvBgP8_nGr7Lb71oSGGjwUaT6c_Q
+2025-10-31 11:22:55 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1TP0vKyHGzSsjIhAQvBgP8_nGr7Lb71oSGGjwUaT6c_Q)
+2025-10-31 11:22:55 - [set_fill] Master NON trovato per doc_id: 1TP0vKyHGzSsjIhAQvBgP8_nGr7Lb71oSGGjwUaT6c_Q
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:23:03 - [set_fill] Inizio calcolo percentuale per doc_id: 1Epo-kL8nWSahWRo_h0O8BIiTmRu579ab3S3ktHnimqE
+2025-10-31 11:23:03 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1Epo-kL8nWSahWRo_h0O8BIiTmRu579ab3S3ktHnimqE)
+2025-10-31 11:23:03 - [set_fill] Master NON trovato per doc_id: 1Epo-kL8nWSahWRo_h0O8BIiTmRu579ab3S3ktHnimqE
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:23:11 - [set_fill] Inizio calcolo percentuale per doc_id: 1daaGxNdnKzxAWmqd7z2c9BgPn2aq4TuQB00VWibLvj8
+2025-10-31 11:23:11 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1daaGxNdnKzxAWmqd7z2c9BgPn2aq4TuQB00VWibLvj8)
+2025-10-31 11:23:11 - [set_fill] Master NON trovato per doc_id: 1daaGxNdnKzxAWmqd7z2c9BgPn2aq4TuQB00VWibLvj8
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:23:19 - [set_fill] Inizio calcolo percentuale per doc_id: 1uOw3nxXTH_vXgrV_o1mYIaaLJ85S1jsHI75nosm35H0
+2025-10-31 11:23:19 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1uOw3nxXTH_vXgrV_o1mYIaaLJ85S1jsHI75nosm35H0)
+2025-10-31 11:23:19 - [set_fill] Master NON trovato per doc_id: 1uOw3nxXTH_vXgrV_o1mYIaaLJ85S1jsHI75nosm35H0
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:23:29 - [set_fill] Inizio calcolo percentuale per doc_id: 1sQU9pdzLxCCCpLFaebc5noDxKIRcBz_6M-SDYMv-2mo
+2025-10-31 11:23:29 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1sQU9pdzLxCCCpLFaebc5noDxKIRcBz_6M-SDYMv-2mo)
+2025-10-31 11:23:29 - [set_fill] Master NON trovato per doc_id: 1sQU9pdzLxCCCpLFaebc5noDxKIRcBz_6M-SDYMv-2mo
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:23:50 - [set_fill] Inizio calcolo percentuale per doc_id: 1gfyj5pHbyYb9-dMat-GekZ23R4YuXebOvEYRM9KM31w
+2025-10-31 11:23:50 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1gfyj5pHbyYb9-dMat-GekZ23R4YuXebOvEYRM9KM31w)
+2025-10-31 11:23:50 - [set_fill] Master NON trovato per doc_id: 1gfyj5pHbyYb9-dMat-GekZ23R4YuXebOvEYRM9KM31w
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:26:17 - [set_fill] Inizio calcolo percentuale per doc_id: 1PsudF7HKuFpi7Xq6TU0OtkJTaIaPWUBcZOFAUfjR2H0
+2025-10-31 11:26:17 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1PsudF7HKuFpi7Xq6TU0OtkJTaIaPWUBcZOFAUfjR2H0)
+2025-10-31 11:26:27 - [set_fill] Inizio calcolo percentuale per doc_id: 1iU1AZStW8bAtrwwePSEdEwnvW9fTjZYUkmhnCLYnBFo
+2025-10-31 11:26:27 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1iU1AZStW8bAtrwwePSEdEwnvW9fTjZYUkmhnCLYnBFo)
+2025-10-31 11:26:34 - [set_fill] Inizio calcolo percentuale per doc_id: 1CaJMN9RLF69Uw7YEE-7KqizG1GytbSf4Ig8m2-SNgQ0
+2025-10-31 11:26:34 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1CaJMN9RLF69Uw7YEE-7KqizG1GytbSf4Ig8m2-SNgQ0)
+2025-10-31 11:26:43 - [set_fill] Inizio calcolo percentuale per doc_id: 1Wc49g3kt1DH2WFMi-FpIRSUG1fVbM0uWyAo0XavZJhQ
+2025-10-31 11:26:43 - [set_fill] SQL Query per trovare il master: select `m`.`id_doc` from `cert_provvisori` as `p` inner join `tbl_master` as `m` on REPLACE(p.real_name, '.doc', '') = `m`.`real_name` where `p`.`id_doc` = ? (Binding per id_doc: 1Wc49g3kt1DH2WFMi-FpIRSUG1fVbM0uWyAo0XavZJhQ)
+2025-10-31 11:29:34 - [set_fill] Inizio calcolo percentuale per doc_id: 11_ak1ZjYwSAf6oFaiieO1tbxO2FOemSvo9BvGxDE1ks
+2025-10-31 11:29:34 - [set_fill] Master NON trovato per doc_id: 11_ak1ZjYwSAf6oFaiieO1tbxO2FOemSvo9BvGxDE1ks
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:29:43 - [set_fill] Inizio calcolo percentuale per doc_id: 14WSKPysRZqoZ7VpHkqop6QyisTzaeMHEMsiBKITGJC4
+2025-10-31 11:29:43 - [set_fill] Master NON trovato per doc_id: 14WSKPysRZqoZ7VpHkqop6QyisTzaeMHEMsiBKITGJC4
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:29:51 - [set_fill] Inizio calcolo percentuale per doc_id: 1fCfQt5csHCYRB5anS6IkF-MccM7DQW5bhKceeMGlB-w
+2025-10-31 11:29:51 - [set_fill] Master NON trovato per doc_id: 1fCfQt5csHCYRB5anS6IkF-MccM7DQW5bhKceeMGlB-w
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:29:59 - [set_fill] Inizio calcolo percentuale per doc_id: 1PzycVcM61HejChBOjEJY5PhNB_8uvRNw7Bb_lSzyzQA
+2025-10-31 11:29:59 - [set_fill] Master NON trovato per doc_id: 1PzycVcM61HejChBOjEJY5PhNB_8uvRNw7Bb_lSzyzQA
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:30:07 - [set_fill] Inizio calcolo percentuale per doc_id: 1WHKulpT1g_G_6HfL2pkqU8De_fwbEwfJ6dlzWYaWurA
+2025-10-31 11:30:07 - [set_fill] Master NON trovato per doc_id: 1WHKulpT1g_G_6HfL2pkqU8De_fwbEwfJ6dlzWYaWurA
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:30:16 - [set_fill] Inizio calcolo percentuale per doc_id: 1Pm6QD0Y9mREm7b5HJv0JVB5S4fN4k8T5aZVCf9Is7p8
+2025-10-31 11:30:16 - [set_fill] Master NON trovato per doc_id: 1Pm6QD0Y9mREm7b5HJv0JVB5S4fN4k8T5aZVCf9Is7p8
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:30:27 - [set_fill] Inizio calcolo percentuale per doc_id: 1k5tKfoOVFewkpl0YfgaOAaX9blG5gMl9HDMlhcs8-sY
+2025-10-31 11:30:27 - [set_fill] Master NON trovato per doc_id: 1k5tKfoOVFewkpl0YfgaOAaX9blG5gMl9HDMlhcs8-sY
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------
+2025-10-31 11:37:16 - [set_fill] Inizio calcolo percentuale per doc_id: 1TuzYr1vtN8WVEv6n9keIi6pUGdbK2H6eQIlWKXIFUBg
+2025-10-31 11:37:16 - [set_fill] Master NON trovato per doc_id: 1TuzYr1vtN8WVEv6n9keIi6pUGdbK2H6eQIlWKXIFUBg
+Nome provvisorio cercato (real_name): N/D
+Nome master derivato per la join: N/D
+--------------------------------------------------

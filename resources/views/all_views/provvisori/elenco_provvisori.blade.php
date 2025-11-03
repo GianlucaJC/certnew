@@ -87,12 +87,17 @@ use Illuminate\Support\Facades\Storage;
                 <tbody>
                   @foreach($elenco_provvisori as $provvisorio)
                     <tr id='tr{{$provvisorio->id}}'>
-                        <td style='width:70px'>
-                            @if ($provvisorio->stato==0)
-                              <div class="alert alert-warning p-1" role="alert" align='center'>
-                                  Incompleto
-                              </div>
-                            @endif  
+                        <td style='width:70px;text-align:center'>
+                            @if ($provvisorio->stato == 0)
+                                @if ($provvisorio->perc_complete == 100)
+                                    <button class='btn btn-info btn-sm' type='button' onclick="save_to_ready_from_list('{{$provvisorio->id_doc}}', '{{$provvisorio->id}}')" id='btn_ready_list{{$provvisorio->id}}'><i class="fas fa-arrow-circle-right"></i> Passa a Pronto</button>
+                                @else
+                                    <div class="progress" role="progressbar" aria-label="Completamento" aria-valuenow="{{ $provvisorio->perc_complete }}" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar bg-warning" style="width: {{ $provvisorio->perc_complete }}%">{{ $provvisorio->perc_complete }}%</div>
+                                    </div>
+                                    <small>Incompleto</small>
+                                @endif
+                            @endif
                             @if ($provvisorio->stato==1)
                               <center>
                                   <div class="form-check">
@@ -114,7 +119,7 @@ use Illuminate\Support\Facades\Storage;
                         
                           @if ($provvisorio->stato==0)  
                             <a href="edit_provvisorio/{{$provvisorio->id}}/{{$provvisorio->id_doc}}">
-                              <button type="button" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Compilazione</button>
+                              <button type="button" class="btn btn-primary btn-sm" onclick="this.disabled=true; this.innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Attendere...';"><i class="fas fa-edit"></i> Compilazione</button>
                             </a>
                           @endif
                           @if ($provvisorio->stato==1)
@@ -165,6 +170,27 @@ use Illuminate\Support\Facades\Storage;
     </div>
     <!-- /.content -->
   </div>
+
+  <!-- Modal di conferma -->
+  <div class="modal fade" id="confirmReadyModal" tabindex="-1" aria-labelledby="confirmReadyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmReadyModalLabel">Conferma Cambio Stato</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          Sei sicuro di voler passare il documento allo stato "pronto per trasformazione definitivo"?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Annulla</button>
+          <button type="button" class="btn btn-primary" id="confirmReadyBtn">Conferma</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- /.content-wrapper -->
   
  @endsection
@@ -193,6 +219,6 @@ use Illuminate\Support\Facades\Storage;
 	
 	
 
-	<script src="{{ URL::asset('/') }}dist/js/elenco_provvisori.js?ver=1.025"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_provvisori.js?ver=1.027"></script>
 
 @endsection

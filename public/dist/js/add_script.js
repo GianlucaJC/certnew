@@ -1,12 +1,23 @@
 $(document).ready(function() {
 	
 })
-
+// NOTA: Le funzioni save_to_ready e execute_save_to_ready potrebbero diventare obsolete in futuro,
+// dato che la funzionalità di passaggio a "Pronto" è stata spostata principalmente nell'elenco provvisori.
 function save_to_ready(doc_id) {
-	if (!confirm('Sicuri di cambiare lo stato del documento?')) return false;
+	// Mostra la modale di Bootstrap
+	$('#confirmStateChangeModal').modal('show');
+
+	// Gestisce il click sul pulsante di conferma della modale
+	$("#confirmStateChangeBtn").off('click').on('click', function() {
+		$('#confirmStateChangeModal').modal('hide');
+		execute_save_to_ready(doc_id);
+	});
+}
+
+function execute_save_to_ready(doc_id) {
 	$("#btn_ready").text("Attendere...");
 	$("#btn_ready").attr('disabled', true);
-
+	
 	url=$("#url").val()
 	const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
 	const csrf = metaElements.length > 0 ? metaElements[0].content : "";
@@ -37,24 +48,25 @@ function save_to_ready(doc_id) {
 }
 
 function save_all(doc_id) {
-	str="doc_id="+doc_id
-	
-	$( ".dati" ).each(function(){
-		if (this.value.length!=0) {
-			tag= $(this).attr("data-id_ref");
-			value=this.value;
-			console.log("tag",tag,"value",value)
-			if (str.length!=0) str+="&"
-			str+=tag+"="+value  
+	let str = "doc_id=" + doc_id;
+	let hasValues = false;
+
+	// Itera su tutti gli elementi con classe 'dati' (input di testo, data, select)
+	$(".dati").each(function() {
+		const tag = $(this).data('tag');
+		// Prende semplicemente il valore dell'input, che sia testo, data o il valore di una select
+		let value = $(this).val();
+
+		if (value !== null && value !== '') {
+			hasValues = true;
+			str += "&" + tag + "=" + encodeURIComponent(value);
 		}
-	})	
+	});
 	$("#btn_save_cont").text("Attendere...");
 	$("#btn_save_cont").attr('disabled', true);
 
 	
-
-
-	url=$("#url").val()
+	const url = window.parent.$("#url").val(); // Usa il valore dalla finestra padre
 	const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
 	const csrf = metaElements.length > 0 ? metaElements[0].content : "";
   
@@ -73,12 +85,28 @@ function save_all(doc_id) {
 	})
 	.then(resp=>{
 		entr=0
-		$( ".dati" ).each(function(){
-			if (this.value.length!=0)  $(this).attr('disabled', true);
-			else entr++
-		})
-		if (entr==0) 
+		// Disabilita gli input che sono stati compilati
+		$(".dati").each(function() {
+			// Un campo è considerato compilato se il suo valore non è una stringa vuota.
+			let filled = $(this).val() !== '';
+			
+			if (filled) {
+				$(this).attr('disabled', true);
+			} else {
+				entr++;
+			}
+		});
+		if (entr==0) {
 			$("#btn_save_cont").hide();
+			// Tutti i tag sono stati compilati, quindi mostro il bottone per passare allo stato successivo.
+			var readyCardHtml = `
+				<div class="alert alert-success mt-3" role="alert">
+					<h4 class="alert-heading">Compilazione Completata!</h4>
+					<p>Tutti i tag del documento sono stati compilati. Ora puoi passare questo certificato allo stato "Pronto" dalla pagina "Elenco Provvisori".</p>
+				</div>
+			`;
+			$("#btn_save_cont").parent().append(readyCardHtml);
+		}
 		else {	
 			$("#btn_save_cont").text("Salva dati");
 			$("#btn_save_cont").attr('disabled', false);
@@ -91,4 +119,3 @@ function save_all(doc_id) {
 		return console.log(status, err);
 	})	
 }
-

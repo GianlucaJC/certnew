@@ -46,6 +46,11 @@ class mainController extends Controller
     public function __construct(){
     }
 
+	public function firstpage()
+    {
+        return view('firstpage');
+    }
+
 	function getClient($scope="docs")
 	{
 		/*	N.B. ho utilizzato DB su porta 8012

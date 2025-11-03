@@ -41,13 +41,51 @@ $(document).ready( function () {
 
     
    
+	$('#sele_all').on('click', function(){
+		// Get all rows with search applied
+		var rows = table.rows({ 'search': 'applied' }).nodes();
+		// Check/uncheck checkboxes for all rows in the table
+		$('input[type="checkbox"]', rows).prop('checked', this.checked);
+	 });
+
+	// Handle click on checkbox to set state of "Select all" control
+	$('#tbl_articoli tbody').on('change', 'input[type="checkbox"]', function(){
+		// If checkbox is unchecked
+		if(!this.checked){
+			var el = $('#sele_all').get(0);
+			// If "Select all" control is checked and has 'indeterminate' property
+			if(el && el.checked && ('indeterminate' in el)){
+				// Set visual state of "Select all" control 
+				// as 'indeterminate'
+				el.indeterminate = true;
+			}
+		}
+	});
 	
 
 	
 } );
 
+var isCancelled = false;
 
+function cancel_operation() {
+    if (!confirm("Sei sicuro di voler annullare l'operazione?")) return;
+    
+    isCancelled = true;
+    $("#btn_cancel_op").html('<i class="fas fa-spinner fa-spin"></i> Annullamento in corso...');
+    $("#btn_cancel_op").attr('disabled', true);
+}
+
+
+// Funzione ricorsiva per la creazione dei provvisori
 function make_call(indice) {
+    // Se l'utente ha annullato, interrompi il ciclo
+    if (isCancelled) {
+        $("#div_progress").html('<div class="alert alert-warning mt-2" role="alert">Operazione annullata dall\'utente.</div>');
+        $("#div_crea_provv").show(200); // Mostra di nuovo il pulsante per creare
+        return;
+    }
+
     new_provv = $("#new_provv_if_exist").is(":checked")
     n_p=0;
     if (new_provv==true) n_p=1
@@ -72,21 +110,26 @@ function make_call(indice) {
         console.log(resp)
         indice++ 
         perc=parseInt((100/make_call.arr_info.length)*indice)
-
-        html=`
-        <div class="progress mt-2" role="progressbar" aria-label="Avanzamento creazione provvisori" aria-valuenow="`+perc+`" aria-valuemin="`+perc+`" aria-valuemax="100">
-            <div class="progress-bar bg-warning" style="width: `+perc+`%">`+perc+`%</div>
-        </div><hr>`
-        $("#div_progress").html(html);
+        
+        // Aggiorna solo la barra di progresso, non tutto il div
+        $("#progress-container .progress-bar").css("width", perc + "%").text(perc + "%");
+        $("#progress-container .progress-bar").attr("aria-valuenow", perc);
         console.log("indice",indice,"arr_info.length",arr_info.length)
-        if (indice<make_call.arr_info.length) make_call(indice)
-        else {
+        
+        // Prosegui con la prossima chiamata solo se non è stato annullato
+        if (indice < make_call.arr_info.length) {
+            // Aggiungo un piccolo timeout per rendere l'UI più reattiva all'annullamento
+            setTimeout(() => make_call(indice), 100);
+        } else {
+            // Operazione completata
             html=`<div class="alert alert-success mt-2" role="alert">
                 Scansione lotti eseguita!<hr>
-
-                <button type="button" onclick="$('#frm_lotti').submit()" class="btn btn-primary">Esegui il refresh della tabella per vedere l'esito dell'associazione master</button>
+                <p>Puoi eseguire il refresh della tabella per vedere l'esito dell'associazione master.</p>
             </div>`
-            $("#div_progress").html(html)
+            // Nasconde il pulsante di creazione e mostra il messaggio di successo
+            $("#div_crea_provv").hide();
+            $("#div_progress").html(html);
+            $("#div_progress").show();
         }
 
     })
@@ -98,7 +141,14 @@ function make_call(indice) {
 
 
 function crea_provv() {
-    if (!confirm("Sicuri di creare i certificati provvisori?")) return false;
+    $('#confirmModal').modal('show');
+}
+
+function crea_provv_confirm() {
+    // Resetta lo stato di annullamento prima di iniziare
+    isCancelled = false;
+
+    $('#confirmModal').modal('hide');
     arr_info=new Array()
     indice=0;
 	$('.sele_lotti').each(function () {
@@ -116,9 +166,15 @@ function crea_provv() {
     if (indice>0) {
         $("#div_crea_provv").hide(100)
         html=`
-            <div class="progress mt-2" role="progressbar" aria-label="Avanzamento creazione provvisori" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar bg-warning" style="width: 0%">0%</div>
-            </div><hr>`
+            <div id="progress-container">
+                <div class="progress mt-2" role="progressbar" aria-label="Avanzamento creazione provvisori" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar bg-warning" style="width: 0%">0%</div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="button" class="btn btn-danger" id="btn_cancel_op" onclick="cancel_operation()">Annulla Operazione</button>
+            </div>
+            <hr>`;
     
         $("#div_progress").html(html)
         $("#div_progress").show();

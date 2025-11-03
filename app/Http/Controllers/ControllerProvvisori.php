@@ -70,7 +70,7 @@ class ControllerProvvisori extends Controller
 	public function elenco_provvisori() {
        
         $elenco_provvisori=cert_provvisori::from('cert_provvisori as p')
-        ->select('p.id','p.id_doc','p.lotto','p.codice','p.codice_associato_master','p.stato','p.created_at','p.updated_at')
+        ->select('p.id','p.perc_complete','p.id_doc','p.lotto','p.codice','p.codice_associato_master','p.stato','p.created_at','p.updated_at')
         ->where('p.stato','=',0)
         ->OrWhere('p.stato','=',1)
         ->get(); 
@@ -584,6 +584,10 @@ class ControllerProvvisori extends Controller
             $cert->id_doc=$file_id;
             $cert->real_name=$provvisorio;
             $cert->check_master=$ckm;
+            if ($n_p=="1") {
+                $cert->stato=0;
+                $cert->perc_complete=0;
+            }
             $cert->save();
         }
         if ($canc==1) {

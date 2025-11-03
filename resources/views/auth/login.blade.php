@@ -1,50 +1,70 @@
 <x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+    <div class="card-body login-card-body">
+        <p class="login-box-msg">{{ __('Accedi per iniziare la sessione') }}</p>
 
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
+        <form method="POST" action="{{ route('login') }}">
+            @csrf
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Userid')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="text" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <!-- Session Status -->
+            @if (session('status'))
+                <div class="alert alert-success mb-3" role="alert">
+                    {{ session('status') }}
+                </div>
+            @endif
+
+            <!-- Userid -->
+            <div class="input-group mb-3">
+                <input id="email" type="text" name="email" class="form-control @error('email') is-invalid @enderror" placeholder="{{ __('Userid') }}" value="{{ old('email') }}" required autofocus autocomplete="username">
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <span class="fas fa-user"></span>
+                    </div>
+                </div>
+                @error('email')
+                    <span class="invalid-feedback" role="alert">
+                        <strong>{{ $message }}</strong>
+                    </span>
+                @enderror
+            </div>
+
+            <!-- Password -->
+            <div class="input-group mb-3">
+                <input id="password" type="password" name="password" class="form-control @error('password') is-invalid @enderror" placeholder="{{ __('Password') }}" required autocomplete="current-password">
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <span class="fas fa-lock"></span>
+                    </div>
+                </div>
+                @error('password')
+                    <span class="invalid-feedback" role="alert">
+                        <strong>{{ $message }}</strong>
+                    </span>
+                @enderror
+            </div>
+
+            <div class="row">
+                <div class="col-8">
+                    <div class="icheck-primary">
+                        <input type="checkbox" id="remember" name="remember">
+                        <label for="remember">
+                            {{ __('Ricordami') }}
+                        </label>
+                    </div>
+                </div>
+                <!-- /.col -->
+                <div class="col-4">
+                    <button type="submit" class="btn btn-primary btn-block">{{ __('Accedi') }}</button>
+                </div>
+                <!-- /.col -->
+            </div>
+        </form>
+
+        <p class="mb-1 mt-3" style='display:none'>
+            <a href="{{ route('password.request') }}">{{ __('Password dimenticata?') }}</a>
+        </p>
+        <div class="mt-3 text-center">
+            <small class="text-muted">© Liofilchem Srl</small>
+            <br><small class="text-muted">Software development by Custom Software</small>
         </div>
-
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
-
-
-        <!-- Remember Me -->
-		<!--
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
-                <span class="ml-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
-            </label>
-        </div>
-		!-->
-
-        <div class="flex items-center justify-end mt-4">
-
-            <x-primary-button class="ml-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
-    </form>
-	<div class="block mt-1">
-		
-		<span class="text-sm text-gray-600"><small>© Liofilchem Srl</small></span>
-		
-	</div>
+    </div>
 </x-guest-layout>
