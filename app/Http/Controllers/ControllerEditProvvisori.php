@@ -97,25 +97,25 @@ class ControllerEditProvvisori extends Controller
         //$tag_O="[";
 		//$tag_C="]";
 
-		$entr=0;
+		$tags_compilabili = 0;
 		foreach ($all_tag as $indice=>$tag_ref ) {
-			$entr++;
-			// Pulisce il tag dai delimitatori per poterlo analizzare
-			$tag = str_replace(['&lt;', '&gt;', '$'], '', $tag_ref);
+			// Pulisce il tag da tutti i possibili delimitatori per poterlo analizzare
+			$tag = preg_replace('/(?:&lt;|\$|\[\[)(.*?)(?:&gt;|\$|\]\])/', '$1', $tag_ref);
 
 			// Controlla se il tag è uno di quelli riservati per la firma.
 			// Se lo è, salta la sostituzione con un campo di input.
 			// Il tag rimarrà evidenziato in giallo ma non sarà editabile.
 			if (in_array($tag, ['firma', 'firma_d'])) {
-				continue; // Salta al prossimo tag
+				continue; // Salta al prossimo tag, non è compilabile manualmente
 			}
-			$tag_sost = $this->render_input($tag_ref, $tag, $indice);
+			$tags_compilabili++;
+			$tag_sost = $this->render_input($tag, $indice);
 			$str_all = str_replace($tag_ref, $tag_sost, $str_all);
 		}	
 		//il relativo file JS che gestiste il provvisorio è in dist/js/add_script.js che viene iniettato tramite iframe
 		$str_all.="<hr>";
-		
-		if ($entr>0) {
+
+		if ($tags_compilabili > 0) {
 			$str_all.="
 				<center>
 					<button type='button' class='btn btn-primary' onclick=\"save_all('$doc_id')\"  name='btn_save_cont' id='btn_save_cont'>Salva dati</button> 
@@ -154,8 +154,10 @@ class ControllerEditProvvisori extends Controller
 		return $info;		
 	}	
 
-	function render_input($tag,$ref_tag,$sca) {
-		$place = $tag; // Default placeholder
+	function render_input($ref_tag,$sca) {
+		$ref_tag=str_replace("[","",$ref_tag);
+		$ref_tag=str_replace("]","",$ref_tag);
+		$place = $ref_tag; // Default placeholder
 		$html = "";
 
 		if ($ref_tag == "pdate" || $ref_tag == "exp" || $ref_tag == "fcont") {
@@ -301,13 +303,23 @@ class ControllerEditProvvisori extends Controller
 
 		// Regex unificata per trovare tutti i tipi di tag in una sola passata.
 		// Supporta sia il formato classico (&lt;tag&gt;) che quello robusto ($tag$).
+		// AGGIUNTO: supporto per il nuovo formato [[tag]]
 		// Questa logica è ora allineata a quella usata in edit_provvisorio.blade.php
-		$pattern = '/(?:&lt;[a-zA-Z][^&]*?&gt;|\$[a-zA-Z_0-9]+\$)/';
+		$pattern = '/(?:\[\[[a-zA-Z_0-9]+\]\]|\[[a-zA-Z_0-9]+\]|&lt;[a-zA-Z][^&]*?&gt;|\$[a-zA-Z_0-9]+\$)/';
 		preg_match_all($pattern, $content, $matches);
 
-		// $matches[0] contiene i tag completi (es. &lt;fcont&gt;)
-		// $matches[1] contiene solo il contenuto del tag (es. fcont)
-		$tags = $matches[0]; // Restituiamo i tag completi come prima
+		$all_found_tags = $matches[0];
+		$tags = [];
+
+		// Filtra i tag per escludere quelli non compilabili manualmente
+		foreach ($all_found_tags as $tag_ref) {
+			// Pulisce il tag dai delimitatori per analizzarne il contenuto
+			$tag_content = preg_replace('/(?:&lt;|\$|\[\[|\]\]|&gt;)/', '', $tag_ref);
+			if (!in_array($tag_content, ['firma', 'firma_d'])) {
+				$tags[] = $tag_ref;
+			}
+		}
+
 		$num_tag = count($tags);
 
 		$info=array();
@@ -319,58 +331,41 @@ class ControllerEditProvvisori extends Controller
 
 
     public static function set_fill($documentId,$info_lotto) {
+		//function utilizzata per il completamento dei tag automatici (es: lotto e scadenza)
 		$client = ControllerEditprovvisori::getClient("docs");
 		$service = new \Google_Service_Docs($client);
 		//open doc and edit
 		$doc = $service->documents->get($documentId);
+		
+		$requests = [];
 		foreach ($info_lotto as $tag=>$modifiedText ) {
-            
-            $tag="<$tag>";
-            
+			// Per ogni dato ricevuto (es. 'lt'), creo un array di tutti i possibili
+			// formati di tag da cercare nel documento (es. [[lt]], <lt>, $lt$, etc.).
+			$tag_formats_to_replace = [
+				"<$tag>",
+				"&lt;$tag&gt;",
+				"$$tag$",
+				"[[$tag]]",
+				"[$tag]"
+			];
 
-            $allText[]=$tag;
-            // Go through and create search/replace requests
-            $requests = $textsAlreadyDone = $forEasyCompare = [];
-            foreach ($allText as $currText) {
-                if (in_array($currText, $textsAlreadyDone, true)) {
-                    // If two identical pieces of text are found only search-and-replace it once - no reason to do it multiple times
-                    continue;
-                }
+			foreach ($tag_formats_to_replace as $tag_to_find) {
+				$requests[] = new \Google_Service_Docs_Request([
+					'replaceAllText' => [
+						'replaceText' => $modifiedText,
+						'containsText' => [
+							'text' => $tag_to_find,
+							'matchCase' => true,
+						],
+					],
+				]);
+			}
+        }
 
-                if (preg_match_all("/(.*?)($tag)(.*?)/", $currText, $matches, PREG_SET_ORDER)) {
-                    //NOTE: for simple static text searching you could of course just use strpos()
-                    // - and then loop on $matches wouldn't be necessary, and str_replace() would be simplified
-                    /*
-                    $modifiedText = $currText;
-
-                    foreach ($matches as $match) {
-                        $modifiedText = str_replace($match[0], $match[1] .$value. $match[3], $modifiedText);
-                    }
-                    */
-
-                    $forEasyCompare[] = ['old' => $currText, 'new' => $modifiedText];
-
-                    $replaceAllTextRequest = [
-                        'replaceAllText' => [
-                            'replaceText' => $modifiedText,
-                            'containsText' => [
-                                'text' => $currText,
-                                'matchCase' => true,
-                            ],
-                        ],
-                    ];
-
-                    $requests[] = new \Google_Service_Docs_Request($replaceAllTextRequest);
-                }
-                $textsAlreadyDone[] = $currText;
-            }
-
-            if (count($forEasyCompare)>0) {
-                    $batchUpdateRequest = new \Google_Service_Docs_BatchUpdateDocumentRequest(['requests' => $requests]);
-                    $response = $service->documents->batchUpdate($documentId, $batchUpdateRequest);
-                    //echo "OK";
-            }
-        }			
+		if (count($requests) > 0) {
+			$batchUpdateRequest = new \Google_Service_Docs_BatchUpdateDocumentRequest(['requests' => $requests]);
+			$response = $service->documents->batchUpdate($documentId, $batchUpdateRequest);
+		}
         return true;
     }
 
@@ -378,103 +373,39 @@ class ControllerEditProvvisori extends Controller
 		$client = $this->getClient("docs");
 		$service = new \Google_Service_Docs($client);
 
-        
 		//open doc and edit
 		$doc = $service->documents->get($documentId);
 		foreach ($posts as $tag=>$modifiedText ) {
-				// Ricostruisce il tag per la ricerca.
-				// Se il nome del tag contiene '_', è probabile che sia uno dei nuovi tag con '$' (es. $firma_d$).
-				// Altrimenti, usa il vecchio formato con le parentesi angolari.
-				if (strpos($tag, '_') !== false || in_array($tag, ['firma', 'firma_d'])) {
-				// Se il testo modificato proviene da un input (non da un menu a tendina),
-				// è probabile che sia un tag con le parentesi angolari.
-				// Altrimenti, è uno dei nuovi tag con '$'.
-				if (in_array($tag, ['id', 'nid'])) {
-					$tag = '$' . $tag . '$';
-				} else {
-					$tag="<$tag>";
-				}
-	
-					// Collect all pieces of text (see https://developers.google.com/docs/api/concepts/structure to understand the structure)
-					$allText = [];
-					
-					//parsing del testo nel documento
-					//non obbligatoriamente necessario ai fini della sostituzione
-					
-					/*
-					foreach ($doc->body->content as $structuralElement) {
-						
-						if ($structuralElement->paragraph) {
-							foreach ($structuralElement->paragraph->elements as $paragraphElement) {
-								if ($paragraphElement->textRun) {
-									$allText[] = $paragraphElement->textRun->content;
-								}
-							}
-						}
-						
-						if (1==2) {
-							if ($structuralElement->table) {
-								foreach ($structuralElement->table as $tb) {
-									$tb->TableCell);
-									echo "<hr>";
-								}
-							}
-						}
-						
-					}
-					*/
-					
-					//esempio di sostituzione
-				
+			if ($tag == "_token" || $tag == "doc_id") continue;
 
-					$allText[]=$tag;
-					// Go through and create search/replace requests
-					$requests = $textsAlreadyDone = $forEasyCompare = [];
-					foreach ($allText as $currText) {
-						if (in_array($currText, $textsAlreadyDone, true)) {
-							// If two identical pieces of text are found only search-and-replace it once - no reason to do it multiple times
-							continue;
-						}
+			// Per ogni dato ricevuto (es. 'fcont'), creo un array di tutti i possibili
+			// formati di tag da cercare nel documento (es. [[fcont]], <fcont>, $fcont$, etc.).
+			$tag_formats_to_replace = [
+				"<$tag>",
+				"&lt;$tag&gt;",
+				"$$tag$",
+				"[[$tag]]",
+				"[$tag]" // Aggiungo anche il formato con parentesi singole per sicurezza
+			];
 
-						if (preg_match_all("/(.*?)($tag)(.*?)/", $currText, $matches, PREG_SET_ORDER)) {
-							//NOTE: for simple static text searching you could of course just use strpos()
-							// - and then loop on $matches wouldn't be necessary, and str_replace() would be simplified
-							/*
-                            $modifiedText = $currText;
-							foreach ($matches as $match) {
-								$modifiedText = str_replace($match[0], $match[1] .$value. $match[3], $modifiedText);
-							}
-                            */
+			$requests = [];
 
-							$forEasyCompare[] = ['old' => $currText, 'new' => $modifiedText];
+			foreach ($tag_formats_to_replace as $tag_to_find) {
+				$requests[] = new \Google_Service_Docs_Request([
+					'replaceAllText' => [
+						'replaceText' => $modifiedText,
+						'containsText' => [
+							'text' => $tag_to_find,
+							'matchCase' => true, // Mantengo la sensibilità per evitare sostituzioni errate
+						],
+					],
+				]);
+			}
 
-							$replaceAllTextRequest = [
-								'replaceAllText' => [
-									'replaceText' => $modifiedText,
-									'containsText' => [
-										'text' => $currText,
-										'matchCase' => true,
-									],
-								],
-							];
-
-							$requests[] = new \Google_Service_Docs_Request($replaceAllTextRequest);
-						}
-						$textsAlreadyDone[] = $currText;
-					}
-
-					// you could dump out $forEasyCompare to see the changes that would be made
-					/*
-					print_r($allText);
-					echo "<hr>";
-					print_r($forEasyCompare);
-					*/
-					if (count($forEasyCompare)>0) {
-							$batchUpdateRequest = new \Google_Service_Docs_BatchUpdateDocumentRequest(['requests' => $requests]);
-							$response = $service->documents->batchUpdate($documentId, $batchUpdateRequest);
-							//echo "OK";
-					}
-				}			
+			if (count($requests) > 0) {
+				$batchUpdateRequest = new \Google_Service_Docs_BatchUpdateDocumentRequest(['requests' => $requests]);
+				$response = $service->documents->batchUpdate($documentId, $batchUpdateRequest);
+			}
 		}
 		$resp=array();
 		$resp['header']="OK";

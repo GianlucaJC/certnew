@@ -72,13 +72,13 @@
                 </ol>
                 <div class="alert alert-info mt-3">
                     <h4>Quali sono i TAG?</h4>
-                    <p>I tag sono dei segnaposto speciali che il sistema riconosce. Esistono due formati:</p>
+                    <p>I tag sono dei segnaposto speciali che il sistema riconosce e trasforma in campi da compilare. Esistono più formati:</p>
                     <ul>
-                        <li>Il formato "classico": <code>&lt;nome_tag&gt;</code> (es. <code>&lt;fcont&gt;</code>)</li>
-                        <li>Il formato "robusto": <code>$nome_tag$</code> (es. <code>$fcont$</code>)</li>
+                        <li>Nuovo formato (raccomandato): <code>[[nome_tag]]</code> (es. <code>[[fcont]]</code>)</li>
+                        <li>Vecchio formato: <code>&lt;nome_tag&gt;</code> (es. <code>&lt;fcont&gt;</code>)</li>
                     </ul>
-                    <p><strong>Consiglio:</strong> Quando crei o modifichi un documento Master, <strong>usa sempre il formato con il dollaro (<code>$nome_tag$</code>)</strong>. È molto più affidabile e previene errori di formattazione che possono verificarsi con Google Docs.</p>
-                    <p class="mb-0">Se un tag nel vecchio formato non viene riconosciuto, la soluzione migliore è modificare il Master originale e sostituirlo con il nuovo formato.</p>
+                    <p><strong>Consiglio:</strong> Quando crei o modifichi un documento Master, <strong>usa sempre il nuovo formato con le doppie parentesi quadre (<code>[[nome_tag]]</code>)</strong>. È il più affidabile e previene errori di formattazione che possono verificarsi con Google Docs.</p>
+                    <p class="mb-0">Se un tag in un vecchio formato non viene riconosciuto, la soluzione migliore è modificare il Master originale e sostituirlo con il nuovo formato <code>[[...]]</code>.</p>
                 </div>
                 <div class="alert alert-warning mt-3">
                     <h4 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Consiglio per la creazione dei TAG</h4>
@@ -119,18 +119,18 @@
             <div class="card-body">
                 <p>Questi sono i segnaposto che puoi usare nei tuoi documenti Master.</p>
                 <dl class="row">
-                    <dt class="col-sm-3"><code>$lt$</code> o <code>&lt;lt&gt;</code></dt>
+                    <dt class="col-sm-3"><code>[[lt]]</code> o <code>&lt;lt&gt;</code></dt>
                     <dd class="col-sm-9">Sostituito con il <strong>numero di lotto</strong>.</dd>
-                    <dt class="col-sm-3"><code>$pdate$</code> o <code>&lt;pdate&gt;</code></dt>
+                    <dt class="col-sm-3"><code>[[pdate]]</code> o <code>&lt;pdate&gt;</code></dt>
                     <dd class="col-sm-9">Sostituito con la <strong>data di produzione</strong>.</dd>
-                    <dt class="col-sm-3"><code>$exp$</code> o <code>&lt;exp&gt;</code></dt>
+                    <dt class="col-sm-3"><code>[[exp]]</code> o <code>&lt;exp&gt;</code></dt>
                     <dd class="col-sm-9">Sostituito con la <strong>data di scadenza</strong>.</dd>
-                    <dt class="col-sm-3"><code>$fcont$</code> o <code>&lt;fcont&gt;</code></dt>
+                    <dt class="col-sm-3"><code>[[fcont]]</code> o <code>&lt;fcont&gt;</code></dt>
                     <dd class="col-sm-9">Genera un campo data per l'<strong>approvazione</strong>.</dd>
-                    <dt class="col-sm-3"><code>$id$</code> / <code>$nid$</code> o <code>&lt;id&gt;</code> / <code>&lt;nid&gt;</code></dt>
+                    <dt class="col-sm-3"><code>[[id]]</code> / <code>[[nid]]</code> (e vecchio formato)</dt>
                     <dd class="col-sm-9">Generano campi per le spunte di <strong>idoneità/non idoneità</strong>.</dd>
-                    <dt class="col-sm-3"><code>$firma$</code> e <code>$firma_d$</code></dt>
-                    <dd class="col-sm-9">Sostituiti con l'<strong>immagine e la didascalia della firma</strong> dell'utente che finalizza.</dd>
+                    <dt class="col-sm-3"><code>[[firma]]</code> e <code>[[firma_d]]</code> (e vecchi formati)</dt>
+                    <dd class="col-sm-9">Sostituiti con l'<strong>immagine e la didascalia della firma</strong> dell'utente che finalizza. <strong>Non sono compilabili manualmente.</strong></dd>
                 </dl>
             </div>
         </div>

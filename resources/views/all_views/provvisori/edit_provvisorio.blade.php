@@ -124,9 +124,9 @@ use Illuminate\Support\Facades\Storage;
                         $html_content = str_replace("Symbol", "Arial", $html_content);
 
                         // Regex per trovare i tag, identica a quella usata in ControllerEditProvvisori.php
-                        // per coerenza. Cerca sia &lt;...&gt; che $...$
-                        // La regex è stata aggiornata per supportare entrambi i formati.
-                        $pattern = '/(?:&lt;[a-zA-Z][^&]*?&gt;|\$[a-zA-Z_0-9]+\$)/';
+                        // per coerenza. Cerca [[...]], &lt;...&gt; e $...$
+                        // La regex è stata aggiornata per supportare tutti i formati.
+                        $pattern = '/(?:\[\[[a-zA-Z_0-9]+\]\]|\[[a-zA-Z_0-9]+\]|&lt;[a-zA-Z][^&]*?&gt;|\$[a-zA-Z_0-9]+\$)/';
 
                         // Usiamo preg_replace_callback per avvolgere ogni tag trovato con uno span giallo.
                         // Questo approccio è più semplice e robusto del precedente, perché non dipende
@@ -177,19 +177,19 @@ use Illuminate\Support\Facades\Storage;
                 <div class="card-header"><h5 class="card-title">Tag a compilazione automatica</h5></div>
                 <div class="card-body">
                   <dl class="row">
-                    <dt class="col-sm-3"><code>$lt$</code> o <code>&lt;lt&gt;</code></dt>
+                    <dt class="col-sm-3"><code>[[lt]]</code> (e vecchi)</dt>
                     <dd class="col-sm-9">Sostituito automaticamente con il <strong>numero di lotto</strong> del certificato.</dd>
 
-                    <dt class="col-sm-3"><code>$pdate$</code> o <code>&lt;pdate&gt;</code></dt>
+                    <dt class="col-sm-3"><code>[[pdate]]</code> (e vecchi)</dt>
                     <dd class="col-sm-9">Sostituito automaticamente con la <strong>data di produzione</strong> del lotto.</dd>
 
-                    <dt class="col-sm-3"><code>$exp$</code> o <code>&lt;exp&gt;</code></dt>
+                    <dt class="col-sm-3"><code>[[exp]]</code> (e vecchi)</dt>
                     <dd class="col-sm-9">Sostituito automaticamente con la <strong>data di scadenza</strong> del lotto.</dd>
 
-                    <dt class="col-sm-3"><code>$firma$</code></dt>
+                    <dt class="col-sm-3"><code>[[firma]]</code></dt>
                     <dd class="col-sm-9">Sostituito con l'<strong>immagine della firma</strong> dell'utente che finalizza il certificato.</dd>
 
-                    <dt class="col-sm-3"><code>$firma_d$</code></dt>
+                    <dt class="col-sm-3"><code>[[firma_d]]</code></dt>
                     <dd class="col-sm-9">Sostituito con la <strong>didascalia della firma</strong> (es. Nome e Cognome dell'utente).</dd>
                   </dl>
                 </div>
@@ -202,13 +202,13 @@ use Illuminate\Support\Facades\Storage;
                 <div class="card-header"><h5 class="card-title">Tag a compilazione manuale</h5></div>
                 <div class="card-body">
                   <dl class="row">
-                    <dt class="col-sm-3"><code>&lt;fcont&gt;</code></dt>
+                    <dt class="col-sm-3"><code>[[fcont]]</code></dt>
                     <dd class="col-sm-9">Genera un campo per inserire la <strong>data di approvazione</strong> del certificato.</dd>
 
-                    <dt class="col-sm-3"><code>&lt;id&gt;</code></dt>
+                    <dt class="col-sm-3"><code>[[id]]</code></dt>
                     <dd class="col-sm-9">Genera un campo per inserire la <strong>spunta di idoneità</strong> (es. ☑).</dd>
 
-                    <dt class="col-sm-3"><code>&lt;nid&gt;</code></dt>
+                    <dt class="col-sm-3"><code>[[nid]]</code></dt>
                     <dd class="col-sm-9">Simile a <code>&lt;id&gt;</code>, usato per la <strong>non idoneità</strong> (es. ☐).</dd>
                   </dl>
                 </div>
@@ -237,10 +237,10 @@ use Illuminate\Support\Facades\Storage;
           </button>
         </div>
         <div class="modal-body" id="tagProblemModalBody">
-          <p>A volte, i tag (es. <code>&lt;fcont&gt;</code> o <code>$fcont$</code>) non vengono evidenziati in giallo a causa di formattazioni nascoste applicate nel documento Google Docs.</p>
+          <p>A volte, i tag (es. <code>[[fcont]]</code> o <code>&lt;fcont&gt;</code>) non vengono evidenziati in giallo a causa di formattazioni nascoste applicate nel documento Google Docs.</p>
           <p>Ad esempio, se solo una parte del tag è in grassetto o corsivo, il sistema potrebbe non riconoscerlo correttamente.</p>
           <div class="alert alert-info">
-            <strong>Consiglio:</strong> Per evitare problemi, è preferibile usare la sintassi con il dollaro (es. <code>$fcont$</code>). Questo formato è più robusto e meno soggetto a errori di formattazione.
+            <strong>Consiglio:</strong> Per evitare problemi, è preferibile usare la nuova sintassi con le doppie parentesi quadre (es. <code>[[fcont]]</code>). Questo formato è più robusto e meno soggetto a errori di formattazione.
             <hr>
             <p class="mb-0">Se un tag non viene riconosciuto, la soluzione migliore è aprire il documento Master originale e sostituire il tag problematico. Per essere sicuri, <strong>scrivete il tag in un editor di testo semplice (es. Notepad) e poi incollatelo nel documento</strong>.</p>
           </div>

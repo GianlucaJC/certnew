@@ -29,7 +29,7 @@ $(document).ready( function () {
         // Se l'utente aveva cliccato per correggere, aggiorno la modale
         if (hasClickedCorreggi) {
             $('#tagProblemModalBody').html('<p>Per visualizzare le modifiche apportate al documento, è necessario aggiornare la pagina.</p><p>Clicca sul pulsante qui sotto per ricaricare l\'anteprima.</p>');
-            $('#tagProblemModalFooter').html('<button type="button" class="btn btn-secondary" data-dismiss="modal">Chiudi</button><button type="button" class="btn btn-success" onclick="location.reload();"><i class="fas fa-sync-alt"></i> Aggiorna Pagina</button>');
+            $('#tagProblemModalFooter').html('<button type="button" class="btn btn-secondary" data-dismiss="modal">Chiudi</button><button type="button" class="btn btn-success" onclick="location.reload(true);"><i class="fas fa-sync-alt"></i> Aggiorna Pagina</button>');
             // Resetto il flag per evitare che si attivi di nuovo
             hasClickedCorreggi = false;
         }
@@ -208,7 +208,6 @@ function load_clone(doc_id) {
   })
   .then(resp=>{
       $('#ifr_doc').attr('srcdoc', resp.content);
-      // Chiamo load_js() qui, dopo che il contenuto dell'iframe è stato impostato.
       // Aggiungo un piccolo ritardo per assicurarmi che il DOM dell'iframe sia pronto.
       if (js_clone === 1) setTimeout(load_js, 100);
       check_load_js_for_clone(); // Riabilita il pulsante dopo il caricamento del contenuto
@@ -292,4 +291,18 @@ function load_js() {
       iFrameHead.appendChild(customScript);
     };
 	}
+
+    // Dopo il caricamento del contenuto e l'iniezione degli script,
+    // imposto la larghezza del body a 'auto' per un layout flessibile.
+    setTimeout(function() { 
+      const iframeBody = $('#ifr_doc').contents().find('body');
+      if (iframeBody.length > 0) {
+        // Sovrascrivo gli stili di Google Docs usando !important.
+        // Rimuovo il max-width per evitare che il contenuto sia limitato in larghezza.
+        iframeBody[0].style.setProperty('max-width', 'none', 'important');
+        // Imposto una larghezza fissa (es. 900px) e uso i margini automatici
+        // per centrare il blocco del corpo orizzontalmente.
+        iframeBody[0].style.setProperty('width', '900px', 'important');
+      }
+    }, 200); // Un leggero ritardo per garantire che il DOM sia pronto.
 }

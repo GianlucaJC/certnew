@@ -20,6 +20,10 @@ use Illuminate\Support\Facades\Storage;
         padding: 3px;
         box-sizing: border-box;
     }
+    .bg-danger-light {
+        background-color: #f5c6cb !important; /* Un rosso più chiaro/sbiadito */
+        color: #721c24; /* Testo scuro per leggibilità */
+    }
 </style>
 @section('content_main')
   <!-- Content Wrapper. Contains page content -->
@@ -51,96 +55,30 @@ use Illuminate\Support\Facades\Storage;
 		<form method='post' action="{{ route('elenco_master') }}" id='frm_articolo' name='frm_articolo' autocomplete="off">
       <input name="_token" type="hidden" value="{{ csrf_token() }}" id='token_csrf'>
       <meta name="csrf-token" content="{{{ csrf_token() }}}">
-
-        <div class="input-group mb-3">
-          <div class="input-group-prepend">
-            <button class="btn btn-outline-secondary" type="submit" name='btn_cerca'>Cerca CoA</button>
-          </div>
-          <input type="text" class="form-control" placeholder="Certificato da cercare" id='cerca_coa' name='cerca_coa'>
-        </div>      
-
         <div class="row">
           <div class="col-md-12">
             <table id='tbl_articoli' class="display">
                     <thead>
                       <tr>
-                      <th style='min-width:210px;max-width:140px'>Operazioni</th>
-                      <th>MASTER</th>
-                      <th>Revisione</th>
-                      <th>Creato il</th>
-                    </tr>
+                        <th style='min-width:210px'>Operazioni</th>
+                        <th>Nome Master</th>
+                        <th>Rev</th>
+                        <th>Data Creazione</th>
+                        <th style='max-width:200px'>Tag Rilevati</th>
+                      </tr>
                     </thead>
                     <tbody>
-                      @foreach($elenco_master as $master)
-                          <tr id='tr{{$master->id}}'>
-
-                            
-                              <td style='min-width:210px'>
-                                <div id='div_oper{{$master->id}}'>
-                                  @if(1==2)
-                                    <button type="button" class="btn btn-primary btn-sm btnall" onclick='edit_rev({{$master->id}})'>Storicizza</button>
-                                  @endif
-                                  
-                                  @if($master->id_clone_from==null) 
-                                    <button type="button" class="btn btn-secondary btn-sm btnall" id='btn_dup{{$master->id}}' onclick="duplica_master('{{$master->id_doc}}',{{$master->id}})">Duplica</button>
-                                  @else
-                                    <button type="button" class="btn btn-primary btn-sm btnall" id='btn_change{{$master->id}}'' onclick="change_master('{{$master->id_doc}}','{{$master->id_clone_from}}',{{$master->id}})">Change Master</button>
-                                  @endif  
-                                  @if($master->obsoleti=="2") 
-                                    <button type="button" class="btn btn-warning btn-sm btnall" >Vedi Obsoleti</button>
-                                  @endif  
-
-
-                                  <button type="button" class="btn btn-danger btn-sm btnall" onclick='dele_master({{$master->id}})' >Elimina</button>
-                                </div>
-                              </td>
-                            
-
-                            <td>
-                              <div id='name_m{{$master->id}}'>
-                                <a target='blank' href='https://docs.google.com/document/d/{{$master->id_doc}}/edit?usp=embed_googleplus'>
-                                  <span id='name_mod{{$master->id}}'>{{$master->real_name}}</span>
-                                </a>
-                              </div>
-                            </td>
-                            <td>
-                                  <?php
-                                      $dx="";
-                                      if ($master->data_rev!=null)
-                                          $dx=date('d-m-Y', strtotime($master->data_rev));
-                                  ?>
-                                  <div id='div_edit{{$master->id}}' class='div_edit'></div>
-                                  
-                                  <span id='info_master{{$master->id}}'
-                                      data-name_master='{{$master->real_name}}'
-                                      data-rev='{{$master->rev}}'
-                                      data-data_rev='{{$master->data_rev}}' 
-                                  ></span>
-                                  
-                                  <a href='#' onclick="load_rev('{{$master->id_doc}}')">
-                                    Info
-                                    @if(1==2)
-                                      <span id='mod_rev{{$master->id}}'>
-                                        @if ($master->rev!=null)
-                                          {{$master->rev}} del {{$dx}}
-                                        @endif
-                                      </span>
-                                    @endif
-                                  </a>
-                                
-                              </td>
-                              <td>{{$master->created_at}}</td>
-                          </tr>  
-                      @endforeach
+                      <!-- I dati verranno caricati da DataTables via AJAX -->
                     </tbody>
                     <tfoot>
                       <tr>
-                        <th style='min-width:210px'></th>
-                        <th>MASTER</th>
-                        <th>Revisione</th>
-                        <th>Creato il</th>
+                        <th></th>
+                        <th>Nome Master</th>
+                        <th>Rev</th>
+                        <th>Data Creazione</th>
+                        <th>Tag Rilevati</th>
                       </tr>
-                    </tfoot>					
+                    </tfoot>
             </table>
 			    	<input type='hidden' id='dele_contr' name='dele_contr'>
 				    <input type='hidden' id='restore_contr' name='restore_contr'>
@@ -149,7 +87,12 @@ use Illuminate\Support\Facades\Storage;
 
         </div>
         <div id=''>
-          <button type="button" class="btn btn-primary btn-sm" onclick='edit_rev(0)'>Nuovo Master</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick='edit_rev(0)'><i class="fas fa-plus-circle"></i> Nuovo Master</button>
+          <button type="button" class="btn btn-info btn-sm" id="btn_verifica_tag_master" onclick="showVerificationChoice()"><i class="fas fa-tags"></i> Verifica TAG</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="filtra_mai_scansionati"><i class="fas fa-eye-slash"></i> Solo mai scansionati</button>
+          <button type="button" class="btn btn-warning btn-sm" id="filtra_tag_mancanti"><i class="fas fa-exclamation-triangle"></i> Filtra tag essenziali non rilevati</button>
+          <button type="button" class="btn btn-default btn-sm" id="reset_filtri"><i class="fas fa-undo"></i> Reset Filtri</button>
+
         </div>
 
 
@@ -176,6 +119,48 @@ use Illuminate\Support\Facades\Storage;
       <div class="modal-footer">
 		    <div id='altri_btn'></div>
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modale per la scelta della verifica -->
+<div class="modal fade" id="verificationChoiceModal" tabindex="-1" role="dialog" aria-labelledby="verificationChoiceModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="verificationChoiceModalLabel">Scegli l'ambito della verifica</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Vuoi verificare i tag per tutti i master filtrati o solo per quelli visibili in questa pagina?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-primary" onclick="verificaTagMaster('page')">Solo pagina corrente</button>
+        <button type="button" class="btn btn-primary" onclick="verificaTagMaster('all')">Tutti i risultati filtrati</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modale per la progress bar -->
+<div class="modal fade" id="progressModal" tabindex="-1" role="dialog" aria-labelledby="progressModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="progressModalLabel">Verifica TAG in corso...</h5>
+      </div>
+      <div class="modal-body">
+        <p id="progress-status">Inizializzazione...</p>
+        <div class="progress">
+          <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" id="cancel-verification-btn">Annulla</button>
       </div>
     </div>
   </div>
@@ -207,7 +192,7 @@ use Illuminate\Support\Facades\Storage;
 	<!-- fine DataTables !-->
 	
 	
-
-	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.052"></script>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.082"></script>
 
 @endsection

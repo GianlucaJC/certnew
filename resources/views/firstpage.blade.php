@@ -39,12 +39,12 @@
                             <li><strong>Selezione dei Lotti di Produzione:</strong> Il sistema recupera i lotti prodotti in una data specifica (di default, oggi).</li>
                             <li><strong>Ricerca del Master:</strong> Per ogni lotto, il sistema identifica il documento "Master" corretto basandosi sul codice prodotto e su un insieme di regole predefinite.</li>
                             <li><strong>Creazione del Certificato Provvisorio:</strong> Il documento Master (un file Google Doc) viene clonato per creare un certificato "Provvisorio" unico per quel lotto.</li>
-                            <li><strong>Compilazione Dati:</strong> L'utente compila il certificato provvisorio inserendo i dati richiesti nei campi specifici (identificati da tag come <code>$TAG$</code> o <code>&lt;TAG&gt;</code>) presenti nel documento.</li>
+                            <li><strong>Compilazione Dati:</strong> L'utente compila il certificato provvisorio inserendo i dati richiesti nei campi specifici (identificati da tag come <code>&lt;TAG&gt;</code> o <code>[[TAG]]</code>) presenti nel documento.</li>
                             <li><strong>Generazione del PDF Finale:</strong> Una volta completata la compilazione, l'utente trasforma il certificato provvisorio in un documento PDF finale, classificandolo come "Idoneo" o "Non Idoneo".</li>
                         </ol>
                         <div class="alert alert-warning mt-2">
                             <h5 class="alert-heading mb-0"><i class="fas fa-exclamation-triangle"></i> Consiglio per i TAG</h5>
-                            <p class="mb-0">Quando si crea o modifica un documento Master, si consiglia di <strong>scrivere i tag (es. <code>$lt$</code>) in un editor di testo semplice</strong> (come Notepad) e poi incollarli nel documento. Questo previene errori di formattazione di Google Docs.</p>
+                            <p class="mb-0">Quando si crea o modifica un documento Master, si consiglia di <strong>scrivere i tag (es. <code>[[lt]]</code>) in un editor di testo semplice</strong> (come Notepad) e poi incollarli nel documento. Questo previene errori di formattazione di Google Docs.</p>
                         </div>
                         <hr>
                         

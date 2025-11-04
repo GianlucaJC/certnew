@@ -167,20 +167,145 @@ class ControllerMaster extends Controller
 
 	public function elenco_master(Request $request) {
         $cerca_coa=$request->input('cerca_coa');
-        $elenco_master=array();
-        if (strlen($cerca_coa)!=0) {
-            $elenco_master=tbl_master::from('tbl_master as m')
-            ->select('m.id','m.id_doc','m.id_clone_from','m.real_name','m.obsoleti','m.rev','m.data_rev','m.created_at','m.updated_at')
-            ->where('m.dele','=',0)
-            ->where('m.obsoleti','<>',1)
-            ->where('m.real_name','like',"%$cerca_coa%")    
-            ->get(); 
-        } 
         
-		return view('all_views/master/elenco_master',compact('elenco_master'));
+        // Se la richiesta è per la verifica dei tag, la gestiamo qui
+        if ($request->has('action') && $request->input('action') == 'verifica_tag') {
+            $ids_json = $request->input('ids', '[]');
+            // L'input 'ids' arriva come una stringa JSON, quindi la decodifichiamo in un array PHP.
+            $ids = json_decode($ids_json, true);
+            // Se la decodifica fallisce o non produce un array, usiamo un array vuoto per sicurezza.
+            if (!is_array($ids)) $ids = [];
+            $result = $this->verifica_tag_master($ids);
+            return response()->json($result);
+        }
+        
+        // Controllo robusto per DataTables: verifica se è una richiesta AJAX o se contiene il parametro 'draw'.
+        if ($request->ajax() || $request->has('draw')) {
+            try {
+                $query = tbl_master::from('tbl_master as m')
+                    ->select('m.id', 'm.id_doc', 'm.id_clone_from', 'm.real_name', 'm.obsoleti', 'm.rev', 'm.data_rev', 'm.created_at', 'm.updated_at', 'm.last_scan')
+                    ->where('m.dele', '=', 0)
+                    ->where('m.obsoleti', '<>', 1);
+
+                // Aggiungo le colonne dei tag al select
+                $query->addSelect('m.tag_lt', 'm.tag_exp', 'm.tag_fcont', 'm.tag_pdate', 'm.tag_id', 'm.tag_nid');
+
+                // Conteggio totale record senza filtri (ma con le clausole where iniziali e tutte le select)
+                $totalData = $query->clone()->count();
+
+                $filteredQuery = $query->clone(); // Utilizza un oggetto query separato per il filtraggio
+
+                // Gestione del filtro custom per i tag essenziali mancanti
+                $customFilter = $request->input('custom_filter');
+                if ($customFilter === 'tag_essenziali_mancanti') {
+                    $filteredQuery->where(function($q) {
+                        $q->where('m.tag_lt', '=', 0)
+                          ->orWhere('m.tag_exp', '=', 0)
+                          ->orWhere('m.tag_pdate', '=', 0);
+                    })
+                    // Aggiungiamo questa condizione per escludere quelli mai scansionati, che non hanno tag rossi ma una dicitura a parte
+                    ->whereNotNull('m.last_scan');
+                }
+
+                // Applica ricerca per colonna
+                $columns = $request->input('columns');
+                $hasColumnSearch = false;
+                if ($columns) {
+                    foreach ($columns as $column) {
+                        if (!empty($column['search']['value'])) {
+                            $hasColumnSearch = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ($hasColumnSearch) {
+                    // Se c'è almeno una ricerca per colonna, la applichiamo
+                    if ($columns) {
+                        $searchValue = $columns[1]['search']['value'] ?? null;
+                        if ($searchValue) { // real_name
+                            $filteredQuery->where('m.real_name', 'like', '%'.$searchValue.'%');
+                        }
+
+                        $searchValue = $columns[2]['search']['value'] ?? null;
+                        if ($searchValue) { // Colonna Rev (combinata)
+                            $filteredQuery->where(function($q) use ($searchValue) {
+                                $q->where('m.rev', 'like', '%'.$searchValue.'%')
+                                  ->orWhere('m.data_rev', 'like', '%'.$searchValue.'%')
+                                  ->orWhere(DB::raw("DATE_FORMAT(m.data_rev, '%d-%m-%Y')"), 'like', '%'.$searchValue.'%');
+                            });
+                        }
+
+                        $searchValue = $columns[4]['search']['value'] ?? null;
+                        if ($searchValue) { // Tag Rilevati
+                            $searchTag = strtolower(trim($searchValue));
+                            $validTags = ['lt', 'exp', 'fcont', 'pdate', 'id', 'nid'];
+    
+                            if (in_array($searchTag, $validTags)) {
+                                $tagColumn = 'm.tag_' . $searchTag;
+                                $filteredQuery->where($tagColumn, '=', 1);
+                            } elseif (strpos($searchTag, 'mai') !== false || strpos($searchTag, 'rosso') !== false) {
+                                $filteredQuery->whereNull('m.last_scan');
+                            } else {
+                                $filteredQuery->whereRaw('1 = 0'); // Nessun risultato se il tag non è valido
+                            }
+                        }
+                    }
+                } elseif (!empty($request->input('search.value'))) {
+                    // Altrimenti, se non ci sono ricerche per colonna, applichiamo la ricerca globale
+                    $searchValue = $request->input('search.value');
+                    $filteredQuery->where(function($q) use ($searchValue) {
+                        $q->where('m.real_name', 'like', "%{$searchValue}%")
+                          ->orWhere('m.rev', 'like', "%{$searchValue}%");
+                    });
+                }
+                // Conteggio record dopo filtri
+                $totalFiltered = $filteredQuery->clone()->count(); // Clona prima di ordinare/limitare
+
+                // Ordinamento
+                $order = $request->input('order.0');
+                if (!empty($order)) {
+                    $orderColumnIndex = $order['column'];
+                    $orderDirection = $order['dir'];
+                    $columnName = $request->input("columns.{$orderColumnIndex}.name"); // Questo dovrebbe essere il 'name' dalla configurazione delle colonne JS
+                    if ($columnName) {
+                        $filteredQuery->orderBy($columnName, $orderDirection);
+                    }
+                }
+
+                // Paginazione
+                $start = $request->input('start', 0);
+                $length = $request->input('length', 10);
+                $data = $filteredQuery->offset($start)->limit($length)->get();
+
+                return response()->json([
+                    "draw"            => intval($request->input('draw')),
+                    "recordsTotal"    => intval($totalData),
+                    "recordsFiltered" => intval($totalFiltered),
+                    "data"            => $data
+                ]);
+            } catch (\Exception $e) {
+                // Logga l'errore per il debug
+                \Log::error("Errore DataTables in ControllerMaster@elenco_master: " . $e->getMessage());
+                // Restituisci una risposta JSON vuota ma valida per evitare l'alert di DataTables
+                return response()->json([
+                    "draw"            => intval($request->input('draw')),
+                    "recordsTotal"    => 0,
+                    "recordsFiltered" => 0,
+                    "data"            => [],
+                    "error"           => "Si è verificato un errore sul server." // Opzionale: per debug
+                ]);
+            }
+        }
+
+		return view('all_views/master/elenco_master');
     }
 
     public function dele_master(Request $request) {
+
+
+
+
         $id_ref=$request->input('id_ref');
         $dele=tbl_master::where('id','=',$id_ref)->update(['dele' =>1]);
         $esito['header']="OK";
@@ -277,6 +402,59 @@ class ControllerMaster extends Controller
         return $fileId->id;
         
     } 
+
+    public function verifica_tag_master($ids) {
+        $defined_tags = ['lt', 'exp', 'fcont', 'pdate', 'id', 'nid'];
+        $client = new \Google_Client();
+        $client->setClientId(env('GOOGLE_DRIVE_CLIENT_ID'));
+        $client->setClientSecret(env('GOOGLE_DRIVE_CLIENT_SECRET'));
+        $client->refreshToken(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        $service = new \Google_Service_Drive($client);
+
+        $processed_count = 0;
+
+        foreach ($ids as $id_doc) {
+            try {
+                $response = $service->files->export($id_doc, 'text/html', ['alt' => 'media']);
+                $content = $response->getBody()->getContents();
+
+                $tag_updates = [];
+                foreach ($defined_tags as $tag) {
+                
+                    // Pattern per cercare <tag>, &lt;tag&gt;, [[tag]], [tag].
+                    $pattern = "/(&lt;{$tag}&gt;|<{$tag}>|\\[\\[{$tag}\\]\\]|\\[{$tag}\\])/i";
+                
+                    if (preg_match($pattern, $content)) {
+                        $tag_updates['tag_' . $tag] = 1;
+                    } else {
+                        $tag_updates['tag_' . $tag] = 0;
+                    }
+                    
+                }
+                
+
+                if (!empty($tag_updates)) {
+                    // Aggiungo anche l'aggiornamento della data di scansione
+                    $update_data = array_merge($tag_updates, ['last_scan' => now()]);
+                    tbl_master::where('id_doc', $id_doc)->update($update_data);
+                }
+                $processed_count++;
+                
+            } catch (\Exception $e) {
+                // Logga l'errore o gestiscilo come preferisci
+                // Per ora, continuiamo con il prossimo documento
+                \Log::error("Errore durante la verifica dei tag per il doc ID: $id_doc - " . $e->getMessage());
+                continue;
+            }
+        }
+
+        return [
+            'success' => true, 
+            'message' => "Verifica completata. Documenti processati: " . $processed_count . "/" . count($ids),
+            'processed' => $processed_count,
+            'total' => count($ids)
+        ];
+    }
 
 
 }	
