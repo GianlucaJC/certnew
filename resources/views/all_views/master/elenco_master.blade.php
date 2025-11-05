@@ -67,6 +67,8 @@ use Illuminate\Support\Facades\Storage;
                 <button type="button" class="btn btn-info btn-sm m-1" id="btn_verifica_tag_master" onclick="showTagSelectionModal()"><i class="fas fa-tags"></i> Verifica TAG</button>
                 <button type="button" class="btn btn-secondary btn-sm m-1" id="filtra_mai_scansionati"><i class="fas fa-eye-slash"></i> Solo mai scansionati</button>
                 <button type="button" class="btn btn-warning btn-sm m-1" id="filtra_tag_mancanti"><i class="fas fa-exclamation-triangle"></i> Filtra tag essenziali non rilevati</button>
+                <button type="button" class="btn btn-outline-success btn-sm m-1" id="filtra_sistemati"><i class="fas fa-check"></i> Solo Sistemati</button>
+                <button type="button" class="btn btn-outline-danger btn-sm m-1" id="filtra_non_sistemati"><i class="fas fa-times"></i> Solo Non Sistemati</button>
                 <button type="button" class="btn btn-default btn-sm m-1" id="reset_filtri"><i class="fas fa-undo"></i> Reset Filtri</button>
               </div>
             </div>
@@ -82,6 +84,7 @@ use Illuminate\Support\Facades\Storage;
                         <th>Rev</th>
                         <th>Data Creazione</th>
                         <th style='max-width:200px'>Tag Rilevati</th>
+                        <th>Stato</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -94,6 +97,7 @@ use Illuminate\Support\Facades\Storage;
                         <th>Rev</th>
                         <th>Data Creazione</th>
                         <th>Tag Rilevati</th>
+                        <th></th>
                       </tr>
                     </tfoot>
             </table>
@@ -240,6 +244,6 @@ use Illuminate\Support\Facades\Storage;
 	
 	
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.107"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.118"></script>
 
 @endsection

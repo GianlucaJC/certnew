@@ -248,9 +248,17 @@ class ControllerMaster extends Controller
         if ($request->ajax() || $request->has('draw')) {
             try {
                 $query = tbl_master::from('tbl_master as m')
-                    ->select('m.id', 'm.id_doc', 'm.id_clone_from', 'm.real_name', 'm.obsoleti', 'm.rev', 'm.data_rev', 'm.created_at', 'm.updated_at', 'm.last_scan', 'm.tags_found')
+                    ->select('m.id', 'm.id_doc', 'm.id_clone_from', 'm.real_name', 'm.obsoleti', 'm.rev', 'm.data_rev', 'm.created_at', 'm.updated_at', 'm.last_scan', 'm.tags_found', 'm.sistemato')
                     ->where('m.dele', '=', 0)
                     ->where('m.obsoleti', '<>', 1);
+
+                // Filtro per 'sistemato'
+                $customFilterSistemato = $request->input('custom_filter_sistemato');
+                if ($customFilterSistemato === 'sistemati') {
+                    $query->where('m.sistemato', '=', 1);
+                } elseif ($customFilterSistemato === 'non_sistemati') {
+                    $query->where('m.sistemato', '=', 0);
+                }
 
                 // Conteggio totale record senza filtri (ma con le clausole where iniziali e tutte le select)
                 $totalData = $query->clone()->count();
@@ -265,6 +273,14 @@ class ControllerMaster extends Controller
                     })
                     // Aggiungiamo questa condizione per escludere quelli mai scansionati, che non hanno tag rossi ma una dicitura a parte
                     ->whereNotNull('m.last_scan');
+                }
+
+                // Gestione del filtro custom per i sistemati
+                $customFilterSistemato = $request->input('custom_filter_sistemato');
+                if ($customFilterSistemato === 'sistemati') {
+                    $filteredQuery->where('m.sistemato', '=', 1);
+                } elseif ($customFilterSistemato === 'non_sistemati') {
+                    $filteredQuery->where('m.sistemato', '=', 0);
                 }
 
                 // Applica ricerca per colonna
@@ -523,6 +539,28 @@ class ControllerMaster extends Controller
             'processed' => $processed_count,
             'total' => count($ids)
         ];
+    }
+
+    public function toggle_sistemato(Request $request)
+    {
+        try {
+            $id_doc = $request->input('id_doc');
+            if (!$id_doc) {
+                return response()->json(['success' => false, 'message' => 'ID documento non fornito.'], 400);
+            }
+            $master = tbl_master::where('id_doc', $id_doc)->first();
+
+            if ($master) {
+                $master->sistemato = !$master->sistemato;
+                $master->save();
+                return response()->json(['success' => true, 'message' => 'Stato aggiornato con successo.']);
+            }
+
+            return response()->json(['success' => false, 'message' => 'Master non trovato.'], 404);
+        } catch (\Exception $e) {
+            \Log::error("Errore in toggle_sistemato: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Errore del server.'], 500);
+        }
     }
 
 

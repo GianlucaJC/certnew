@@ -82,6 +82,7 @@ Route::middleware('auth')->group(function () {
     Route::post('load_rev', [ 'as' => 'load_rev', 'uses' => 'App\Http\Controllers\ControllerMaster@load_rev']);
     
 
+    Route::post('toggle_sistemato', [ 'as' => 'toggle_sistemato', 'uses' => 'App\Http\Controllers\ControllerMaster@toggle_sistemato']);
     Route::post('to_def', [ 'as' => 'to_def', 'uses' => 'App\Http\Controllers\ControllerMaster@to_def']);
     
 
@@ -95,6 +96,7 @@ Route::middleware('auth')->group(function () {
     })->name('refresh-csrf');
 
 });
+
 
 
 

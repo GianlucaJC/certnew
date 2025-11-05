@@ -1,4 +1,4 @@
-let customFilter = ''; // Variabile per memorizzare lo stato del filtro custom
+let customFilter = '', custom_filter_sistemato = null, verificationController;
 
 $(document).ready( function () {
     $('#tbl_articoli tfoot th').each(function () {
@@ -6,7 +6,7 @@ $(document).ready( function () {
         // Escludi la prima colonna (azioni) dall'input di ricerca
         if ($(this).index() === 0) return;
 
-        var placeholderText = (title.length !== 0) ? title : 'Tag';
+        var placeholderText = (title.length !== 0) ? title : '';
 		
         if (title.length !== 0 || $(this).index() === 4) // Aggiunge l'input anche alla colonna Tag
 			$(this).html('<input type="text" placeholder="Cerca ' + placeholderText + '" style="width:100%" />');
@@ -26,6 +26,7 @@ $(document).ready( function () {
                 if (customFilter) {
                     d.custom_filter = customFilter;
                 }
+                d.custom_filter_sistemato = custom_filter_sistemato;
             },
             "error": function (jqXHR, textStatus, errorThrown) {
                 // Intercetta l'errore AJAX di DataTables per evitare l'alert di default.
@@ -39,7 +40,22 @@ $(document).ready( function () {
             { "data": "rev", "name": "m.rev" },
             { "data": "created_at", "name": "m.created_at", "searchable": false }, // Ricerca disabilitata qui, gestita da Rev
             { "data": "tags_found", "name": "m.tags_found", "orderable": false, "searchable": true }, // Abilitata la ricerca per i tag
-            { "data": "data_rev", "name": "m.data_rev", "visible": false, "searchable": false }, 
+            { 
+                "data": "sistemato", 
+                "name": "m.sistemato", 
+                "orderable": true, 
+                "searchable": false,
+                "render": function(data, type, row) {
+                    const baseUrl = $('meta[name="base-url"]').attr('content');
+                    if (data == 1) {
+                        return `<button class="btn btn-outline-secondary btn-sm" onclick="toggleSistemato('${row.id_doc}', this, '${baseUrl}')">Segna come non sistemato</button>`;
+                    } else {
+                        return `<button class="btn btn-outline-success btn-sm" onclick="toggleSistemato('${row.id_doc}', this, '${baseUrl}')">Segna come sistemato</button>`;
+                    }
+                }
+            },
+            { "data": "data_rev", "name": "m.data_rev", "visible": false, "searchable": false },
+            { "data": "id_doc", "name": "m.id_doc", "visible": false, "searchable": false },
             { "data": "last_scan", "name": "m.last_scan", "visible": false, "searchable": false }
         ],
         "columnDefs": [
@@ -163,6 +179,7 @@ $(document).ready( function () {
         $('#tbl_articoli tfoot input').val('');
         // Resetta il filtro custom e ridisegna la tabella
         customFilter = '';
+        custom_filter_sistemato = null;
     }
 
     // Evento per il pulsante "Solo mai scansionati"
@@ -183,11 +200,50 @@ $(document).ready( function () {
         table.draw();
     });
 
+    function updateSistematoButtons() {
+        if (custom_filter_sistemato === 'sistemati') {
+            $('#filtra_sistemati').removeClass('btn-outline-success').addClass('btn-success');
+            $('#filtra_non_sistemati').removeClass('btn-danger').addClass('btn-outline-danger');
+        } else if (custom_filter_sistemato === 'non_sistemati') {
+            $('#filtra_non_sistemati').removeClass('btn-outline-danger').addClass('btn-danger');
+            $('#filtra_sistemati').removeClass('btn-success').addClass('btn-outline-success');
+        } else {
+            $('#filtra_sistemati').removeClass('btn-success').addClass('btn-outline-success');
+            $('#filtra_non_sistemati').removeClass('btn-danger').addClass('btn-outline-danger');
+        }
+    }
+
+    $('#filtra_sistemati').on('click', function() {
+        if (custom_filter_sistemato === 'sistemati') {
+            custom_filter_sistemato = null; // Deseleziona se già attivo
+        } else {
+            resetAllFilters();
+            custom_filter_sistemato = 'sistemati';
+        }
+        updateSistematoButtons();
+        table.draw();
+    });
+
+    $('#filtra_non_sistemati').on('click', function() {
+        if (custom_filter_sistemato === 'non_sistemati') {
+            custom_filter_sistemato = null; // Deseleziona se già attivo
+        } else {
+            resetAllFilters();
+            custom_filter_sistemato = 'non_sistemati';
+        }
+        updateSistematoButtons();
+        table.draw();
+    });
+
     // Evento per il pulsante "Reset Filtri"
     $('#reset_filtri').on('click', function() {
         resetAllFilters();
+        updateSistematoButtons();
         table.draw(); // Ricarica la tabella senza filtri custom
     });
+
+
+
 } );
 
 
@@ -476,6 +532,37 @@ function dele_master(id_ref) {
         return console.log(status, err);
     })    
 
+}
+
+function toggleSistemato(id_doc, button, baseUrl) {
+    const url = `${baseUrl}/toggle_sistemato`;
+    const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+    $(button).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({ id_doc: id_doc })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Ricarica la riga per aggiornare lo stato senza ridisegnare tutta la tabella
+            window.masterDataTable.row($(button).closest('tr')).ajax.reload(null, false);
+        } else {
+            Swal.fire('Errore!', data.message || 'Impossibile aggiornare lo stato.', 'error');
+            $(button).prop('disabled', false).html($(button).data('original-text'));
+        }
+    })
+    .catch(error => {
+        console.error('Errore:', error);
+        Swal.fire('Errore!', 'Si è verificato un errore di comunicazione.', 'error');
+        $(button).prop('disabled', false).html($(button).data('original-text'));
+    });
 }
 
 // Variabile globale per controllare l'interruzione del processo
