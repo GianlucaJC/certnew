@@ -63,6 +63,18 @@ function save_all(doc_id) {
 		}
 	});
 	$("#btn_save_cont").text("Attendere...");
+
+	// Rimuovo eventuali messaggi di salvataggio precedenti
+	$("#save-feedback").remove();
+
+	// Creo un alert di Bootstrap per il feedback
+	const feedbackAlert = `
+		<div id="save-feedback" class="alert alert-success mt-3" role="alert" style="display: none;">
+			Dati salvati con successo!
+		</div>
+	`;
+	$("#btn_save_cont").parent().append(feedbackAlert);
+
 	$("#btn_save_cont").attr('disabled', true);
 
 	
@@ -110,6 +122,8 @@ function save_all(doc_id) {
 		else {	
 			$("#btn_save_cont").text("Salva dati");
 			$("#btn_save_cont").attr('disabled', false);
+			// Mostro il messaggio di successo e lo nascondo dopo qualche secondo
+			$("#save-feedback").fadeIn().delay(3000).fadeOut();
 		}	
 	
 		//$('#ifr_doc').attr('srcdoc', resp.content);

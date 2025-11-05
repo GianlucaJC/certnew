@@ -562,10 +562,11 @@ class ControllerProvvisori extends Controller
             } 
            
             if ($id_master!="?") {
-                $file_id=$this->clonemaster($id_master,$lotto);
                 //compilazione automatica lotto, scadenza, etc.
                 $info_lotto=$this->info_lotto($lotto);
-                ControllerEditProvvisori::set_fill($file_id,$info_lotto);
+                // Unisco clonazione e riempimento in un'unica sequenza logica per migliorare la manutenibilità
+                // e potenzialmente ridurre le chiamate API in futuro se la libreria lo permetterà.
+                $file_id = $this->clonemaster_and_fill($id_master, $lotto, $info_lotto);
                 $ckm=1;
             }
             //non ho usato lo Storage di google perchè è lento, vedi alternativa nella function clonemaster()
@@ -645,6 +646,12 @@ class ControllerProvvisori extends Controller
         }        
         return $resp;
     }
+    function clonemaster_and_fill($id_master, $lotto, $info_lotto) {
+        $new_file_id = $this->clonemaster($id_master, $lotto);
+        ControllerEditProvvisori::set_fill($new_file_id, $info_lotto);
+        return $new_file_id;
+    }    
+
     function clonemaster($id_master,$lotto)
     {
         /*

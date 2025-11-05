@@ -26,6 +26,11 @@ $(document).ready( function () {
                 if (customFilter) {
                     d.custom_filter = customFilter;
                 }
+            },
+            "error": function (jqXHR, textStatus, errorThrown) {
+                // Intercetta l'errore AJAX di DataTables per evitare l'alert di default.
+                // In questo modo, l'utente non vedrà l'avviso. L'errore viene comunque loggato in console per il debug.
+                console.error("DataTables AJAX error: ", textStatus, errorThrown);
             }
         },
         "columns": [
@@ -33,16 +38,9 @@ $(document).ready( function () {
             { "data": "real_name", "name": "m.real_name" },
             { "data": "rev", "name": "m.rev" },
             { "data": "created_at", "name": "m.created_at", "searchable": false }, // Ricerca disabilitata qui, gestita da Rev
-            { "data": null, "name": "tags", "orderable": false, "searchable": true }, // Abilitata la ricerca per i tag
-            // Aggiungi colonne per i risultati della verifica dei tag (nascoste di default)
-            { "data": "data_rev", "name": "m.data_rev", "visible": false, "searchable": false }, // Nascosto, la ricerca è gestita dalla colonna Rev
-            { "data": "tag_lt", "name": "m.tag_lt", "orderable": false, "searchable": false, "visible": false }, // 6
-            { "data": "tag_exp", "name": "m.tag_exp", "orderable": false, "searchable": false, "visible": false }, // 7
-            { "data": "tag_fcont", "name": "m.tag_fcont", "orderable": false, "searchable": false, "visible": false }, // 8
-            { "data": "tag_pdate", "name": "m.tag_pdate", "orderable": false, "searchable": false, "visible": false }, // 9
-            { "data": "tag_id", "name": "m.tag_id", "orderable": false, "searchable": false, "visible": false }, // 10
-            { "data": "tag_nid", "name": "m.tag_nid", "orderable": false, "searchable": false, "visible": false }, // 11
-            { "data": "last_scan", "name": "m.last_scan", "visible": false, "searchable": false } // 12 - Aggiungo last_scan (nascosto), la ricerca è gestita dalla colonna Tag
+            { "data": "tags_found", "name": "m.tags_found", "orderable": false, "searchable": true }, // Abilitata la ricerca per i tag
+            { "data": "data_rev", "name": "m.data_rev", "visible": false, "searchable": false }, 
+            { "data": "last_scan", "name": "m.last_scan", "visible": false, "searchable": false }
         ],
         "columnDefs": [
             {
@@ -99,23 +97,30 @@ $(document).ready( function () {
             },
             {
                 "targets": 4, // Indice della nuova colonna "Tag Rilevati"
-                "render": function (data, type, row, meta) {
-                    let tagsHtml = '<div class="d-flex flex-wrap">';
-                    const all_tags = ['lt', 'exp', 'fcont', 'pdate', 'id', 'nid'];
-                    const auto_tags = ['lt', 'exp', 'pdate'];
-
-                    // Se last_scan è null, il master non è mai stato scansionato, quindi non mostro nulla.
+                "render": function (data, type, row) {
+                    // Se last_scan è null, il master non è mai stato scansionato.
                     if (row.last_scan === null) {
                         return '<span class="text-muted"><i>Mai scansionato</i></span>';
                     }
 
-                    all_tags.forEach(tag => {
-                        if (row['tag_' + tag] == 1) {
-                            tagsHtml += `<span class="badge bg-success m-1">${tag.toUpperCase()}</span>`;
-                        } else if (row['tag_' + tag] == 0 && auto_tags.includes(tag)) {
-                            // Se il tag è assente (0) ed è uno dei tag automatici, mostro un badge rosso sbiadito.
-                            tagsHtml += `<span class="badge bg-danger-light m-1">${tag.toUpperCase()}</span>`;
-                        }
+                    // Se tags_found è null o vuoto dopo una scansione, significa che non ha trovato nulla.
+                    if (!data) {
+                        return '<span class="text-danger"><i>Nessun tag trovato</i></span>';
+                    }
+
+                    // I dati ora sono una stringa separata da virgole, es: "lt,exp,pdate"
+                    const tags_array = data.split(',').filter(tag => tag.trim() !== '');
+
+                    if (tags_array.length === 0) {
+                        return '<span class="text-danger"><i>Nessun tag trovato</i></span>';
+                    }
+
+                    const essential_tags = ['lt', 'exp', 'pdate'];
+                    let tagsHtml = '<div class="d-flex flex-wrap">';
+                    tags_array.forEach(tag => {
+                        // I tag essenziali (lt, exp, pdate) sono in verde, gli altri in blu.
+                        const badgeClass = essential_tags.includes(tag) ? 'bg-success' : 'bg-primary';
+                        tagsHtml += `<span class="badge ${badgeClass} m-1">${tag.toUpperCase()}</span>`;
                     });
 
                     tagsHtml += '</div>';
@@ -475,10 +480,53 @@ function dele_master(id_ref) {
 
 // Variabile globale per controllare l'interruzione del processo
 let isVerificationCancelled = false;
+let tagsToVerify = []; // Variabile globale per i tag da verificare
 
-// Mostra la modale di scelta
-function showVerificationChoice() {
+// 1. Mostra la modale di selezione dei tag
+function showTagSelectionModal() {
+    $('#tagSelectionModal').modal('show');
+}
+
+// 2. Raccoglie i tag e mostra la modale di scelta dell'ambito
+function startVerificationProcess() {
+    tagsToVerify = [];
+    // Raccoglie i tag standard selezionati
+    $('#tagSelectionModal .form-check-input:checked').each(function() {
+        tagsToVerify.push($(this).val());
+    });
+
+    // Raccoglie e pulisce i tag custom
+    const customTags = $('#custom_tags').val().split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
+
+    tagsToVerify = [...new Set([...tagsToVerify, ...customTags])]; // Unisce e rimuove duplicati
+
+    $('#tagSelectionModal').modal('hide');
     $('#verificationChoiceModal').modal('show');
+}
+
+// Funzione per aggiornare il token CSRF prima di una richiesta POST critica
+async function refreshCsrfToken() {
+    const baseUrl = $('meta[name="base-url"]').attr('content');
+    const requestUrl = `${baseUrl}/refresh-csrf`;
+
+    try {
+        const response = await fetch(requestUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        // Aggiorna il meta tag con il nuovo token
+        $('meta[name="csrf-token"]').attr('content', data.token);
+        return data.token;
+    } catch (error) {
+        console.error('Impossibile aggiornare il token CSRF:', error);
+        return null; // Restituisce null se fallisce
+    }
 }
 
 // Funzione principale per la verifica dei tag, ora accetta una modalità ('page' o 'all')
@@ -488,14 +536,71 @@ async function verificaTagMaster(mode) {
     btn.attr('disabled', true);
     isVerificationCancelled = false;
 
+    // Aggiorna il token CSRF prima di procedere
+    const newCsrfToken = await refreshCsrfToken();
+    if (!newCsrfToken) {
+        alert("Errore di sessione. Impossibile avviare la verifica. Prova a ricaricare la pagina.");
+        btn.attr('disabled', false);
+        return;
+    }
     // Ottieni gli ID in base alla modalità scelta
     let idsToVerify;
+    const url = `${$('meta[name="base-url"]').attr('content')}/elenco_master`;
+
     if (mode === 'page') {
         // Solo le righe nella pagina corrente che corrispondono al filtro
         idsToVerify = window.masterDataTable.rows({ page: 'current', search: 'applied' }).data().map(row => row.id_doc).toArray();
+        if (idsToVerify.length === 0) {
+            alert("Nessun master trovato nella pagina corrente per la verifica.");
+            btn.attr('disabled', false);
+            return;
+        }
+        await processIds(idsToVerify, newCsrfToken);
     } else {
-        // Tutte le righe che corrispondono al filtro
-        idsToVerify = window.masterDataTable.rows({ search: 'applied' }).data().map(row => row.id_doc).toArray();
+        // NUOVA LOGICA: Chiedi al server tutti gli ID che corrispondono ai filtri correnti
+        const table = window.masterDataTable;
+        const columnFilters = [];
+        table.columns().every(function () {
+            const col = this;
+            columnFilters.push({
+                search: { value: col.search() }
+            });
+        });
+
+        const requestBody = new URLSearchParams();
+        requestBody.append('action', 'get_all_filtered_ids');
+        requestBody.append('search[value]', table.search());
+        requestBody.append('custom_filter', customFilter);
+        columnFilters.forEach((filter, index) => {
+            if (filter.search.value) {
+                requestBody.append(`columns[${index}][search][value]`, filter.search.value);
+            }
+        });
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "X-CSRF-Token": newCsrfToken
+                },
+                body: requestBody
+            });
+            const data = await response.json();
+            if (data.success) {
+                if (data.ids.length === 0) {
+                    alert("Nessun master trovato con i filtri applicati per la verifica.");
+                    btn.attr('disabled', false);
+                    return;
+                }
+                await processIds(data.ids, newCsrfToken);
+            } else {
+                throw new Error(data.message || 'Impossibile recuperare gli ID dal server.');
+            }
+        } catch (error) {
+            alert(`Errore: ${error.message}`);
+            btn.attr('disabled', false);
+        }
     }
 
     if (idsToVerify.length === 0) {
@@ -503,23 +608,32 @@ async function verificaTagMaster(mode) {
         btn.attr('disabled', false);
         return;
     }
+}
+
+// Funzione di supporto per eseguire il processo di verifica
+async function processIds(idsToVerify, csrf) {
 
     // Setup e mostra la modale di progresso
     $('#progress-bar').css('width', '0%').attr('aria-valuenow', 0);
     $('#progress-status').text(`In attesa di iniziare... 0 / ${idsToVerify.length}`);
     $('#progressModal').modal('show');
 
+    // Resetta lo stato del pulsante Annulla per la nuova operazione
+    const cancelBtn = $('#cancel-verification-btn');
+    cancelBtn.attr('disabled', false).html('Annulla');
+
     // Gestione del pulsante Annulla
     $('#cancel-verification-btn').off('click').on('click', function() {
+        const btn = $(this);
+        btn.attr('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Annullamento...');
         isVerificationCancelled = true;
     });
 
     const totalIds = idsToVerify.length;
     let processedCount = 0;
     const chunkSize = 5; // Processa 5 ID alla volta per non sovraccaricare il server
-    const csrf = $('meta[name="csrf-token"]').attr('content');
-    const url = "elenco_master";
-
+    // Anche qui, assumiamo la sottodirectory '/certnew' per coerenza.
+    const url = `${$('meta[name="base-url"]').attr('content')}/elenco_master`;
     // Processa gli ID in "chunks" (pacchetti)
     for (let i = 0; i < totalIds; i += chunkSize) {
         if (isVerificationCancelled) {
@@ -537,7 +651,7 @@ async function verificaTagMaster(mode) {
                     "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
                     "X-CSRF-Token": csrf
                 },
-                body: "action=verifica_tag&ids=" + JSON.stringify(chunk),
+                body: "action=verifica_tag&ids=" + JSON.stringify(chunk) + "&tags=" + JSON.stringify(tagsToVerify),
             });
 
             if (!response.ok) {
@@ -565,7 +679,8 @@ async function verificaTagMaster(mode) {
 
     // Azioni finali dopo il completamento o l'annullamento
     setTimeout(() => {
-        $('#progressModal').modal('hide');
+        $('#progressModal').modal('hide'); // Nascondi la modale
+        const btn = $('#btn_verifica_tag_master');
         btn.attr('disabled', false);
         
         if (isVerificationCancelled) {

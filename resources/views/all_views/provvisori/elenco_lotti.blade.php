@@ -190,6 +190,6 @@
 	
 	
 
-	<script src="{{ URL::asset('/') }}dist/js/elenco_lotti.js?ver=1.057"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_lotti.js?ver=1.058"></script>
 
 @endsection

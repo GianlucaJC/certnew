@@ -7,6 +7,9 @@
 // Helper per controllare se una rotta è attiva
 $currentRoute = request()->route()->getName();
 
+// Legge il valore dal file di configurazione
+$fullMenuEnabled = config('menu.full_menu_enabled', false);
+
 // Controlla se una delle voci del sottomenu è attiva
 $isMainMenuActive = in_array($currentRoute, [
     'elenco_master',
@@ -37,16 +40,19 @@ $isMainMenuActive = in_array($currentRoute, [
 				  </p>
 				</a>
 				<ul class="nav nav-treeview" style="{{ $isMainMenuActive ? 'display: block;' : '' }}">
+				@if ($fullMenuEnabled)
+					<li class="nav-item">
+					<a href="{{ route('guida_operatore') }}" class="nav-link {{ request()->routeIs('guida_operatore') ? 'active' : '' }}">
+						<i class="nav-icon fas fa-question-circle"></i>
+						<p>
+						Guida Operatore
+						</p>
+					</a>
+					</li>
+				@endif
 
-				<li class="nav-item">
-				<a href="{{ route('guida_operatore') }}" class="nav-link {{ request()->routeIs('guida_operatore') ? 'active' : '' }}">
-					<i class="nav-icon fas fa-question-circle"></i>
-					<p>
-					Guida Operatore
-					</p>
-				</a>
-				</li>
 
+				@if ($fullMenuEnabled)
 				  <li class="nav-item">
 					<a href="{{route('firstpage')}}" class="nav-link {{ request()->routeIs('firstpage') ? 'active' : '' }}">
 					  <i class="fas fa-home nav-icon"></i>
@@ -54,6 +60,7 @@ $isMainMenuActive = in_array($currentRoute, [
 					</a>
 				  </li>
 				  <hr>
+				@endif
 
 				  <li class="nav-item">
 					<a href="{{route('elenco_master')}}" class="nav-link {{ request()->routeIs('elenco_master') ? 'active' : '' }}">
@@ -62,6 +69,7 @@ $isMainMenuActive = in_array($currentRoute, [
 					</a>
 				  </li>				
 
+				@if ($fullMenuEnabled)
 				  <li class="nav-item">
 					<a href="{{route('elenco_provvisori')}}" class="nav-link {{ request()->routeIs('elenco_provvisori') ? 'active' : '' }}">
 					  <i class="fas fa-file-signature nav-icon"></i>
@@ -91,6 +99,7 @@ $isMainMenuActive = in_array($currentRoute, [
 					  <p>Elenco lotti</p>
 					</a>
 				  </li>		
+				@endif
 				  
 				  <HR>
 				<!--

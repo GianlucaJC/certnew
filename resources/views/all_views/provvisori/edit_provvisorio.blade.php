@@ -95,9 +95,7 @@ use Illuminate\Support\Facades\Storage;
                 <button type="button" class="btn btn-info" data-toggle="modal" data-target="#infoTagModal">
                   <i class="fas fa-info-circle"></i> Info TAG
                 </button>
-                <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#tagProblemModal">
-                  <i class="fas fa-exclamation-triangle"></i> Tag non individuati?
-                </button>
+                
                 <a href="{{ route('elenco_provvisori') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Torna all'elenco provvisori</a>
             </div>
 
@@ -123,17 +121,21 @@ use Illuminate\Support\Facades\Storage;
                         // Correzione per il simbolo di copyright e altri caratteri speciali
                         $html_content = str_replace("Symbol", "Arial", $html_content);
 
-                        // Regex per trovare i tag, identica a quella usata in ControllerEditProvvisori.php
-                        // per coerenza. Cerca [[...]], &lt;...&gt; e $...$
-                        // La regex è stata aggiornata per supportare tutti i formati.
-                        $pattern = '/(?:\[\[[a-zA-Z_0-9]+\]\]|\[[a-zA-Z_0-9]+\]|&lt;[a-zA-Z][^&]*?&gt;|\$[a-zA-Z_0-9]+\$)/';
+                        // Regex unificata per trovare tutti i tipi di tag: [[tag]], [tag], &lt;tag&gt;, $tag$
+                        $pattern = '/(?:\[\[([a-zA-Z0-9_]+)\]\]|\[([a-zA-Z0-9_]+)\]|&lt;([a-zA-Z0-9_]+)&gt;|\$([a-zA-Z0-9_]+)\$)/';
 
                         // Usiamo preg_replace_callback per avvolgere ogni tag trovato con uno span giallo.
-                        // Questo approccio è più semplice e robusto del precedente, perché non dipende
-                        // dalla struttura degli span preesistenti.
                         $html_content = preg_replace_callback($pattern, function($matches) {
-                            // $matches[0] contiene il tag completo trovato (es. '&lt;fcont&gt;')
-                            return '<span style="background-color: yellow !important; display: inline-block;">' . $matches[0] . '</span>';
+                            $tag_completo = $matches[0];
+                            // Pulisco il tag dai delimitatori per verificare se è un tag firma
+                            $tag_pulito = preg_replace('/(?:&lt;|\$|\[\[|\]\]|&gt;)/', '', $tag_completo);
+
+                            // Se il tag è 'firma' o 'firma_d', non lo evidenzio.
+                            if (in_array($tag_pulito, ['firma', 'firma_d'])) {
+                                return $tag_completo; // Restituisco il tag originale
+                            }
+                            // Altrimenti, lo evidenzio in giallo.
+                            return '<span style="background-color: yellow !important; display: inline-block;">' . $tag_completo . '</span>';
                         }, $html_content);
 
                         // Creazione del file di debug
@@ -143,9 +145,8 @@ use Illuminate\Support\Facades\Storage;
                         }
                         $debug_file_full_path = public_path($debug_file_path);
                         file_put_contents($debug_file_full_path, $html_content);
-
-                      ?>
-                      <iframe id='ifr_doc' onload="check_load_js_for_clone()" srcdoc="{{ $html_content }}" style="width:1000px; height:1500px;" frameborder="0"></iframe>
+                      ?>                      
+                      <iframe id='ifr_doc' onload="check_load_js_for_clone()" srcdoc="{{ $html_content }}" style="width: 840px; height: 1500px; border: 1px solid #ccc; box-shadow: 0 0 10px rgba(0,0,0,0.1);" frameborder="0"></iframe>
                     </div>
                 </div>
              </div>
@@ -177,19 +178,19 @@ use Illuminate\Support\Facades\Storage;
                 <div class="card-header"><h5 class="card-title">Tag a compilazione automatica</h5></div>
                 <div class="card-body">
                   <dl class="row">
-                    <dt class="col-sm-3"><code>[[lt]]</code> (e vecchi)</dt>
+                    <dt class="col-sm-3"><code>[[lt]]</code>, <code>&lt;lt&gt;</code>, etc.</dt>
                     <dd class="col-sm-9">Sostituito automaticamente con il <strong>numero di lotto</strong> del certificato.</dd>
 
-                    <dt class="col-sm-3"><code>[[pdate]]</code> (e vecchi)</dt>
+                    <dt class="col-sm-3"><code>[[pdate]]</code>, <code>&lt;pdate&gt;</code>, etc.</dt>
                     <dd class="col-sm-9">Sostituito automaticamente con la <strong>data di produzione</strong> del lotto.</dd>
 
-                    <dt class="col-sm-3"><code>[[exp]]</code> (e vecchi)</dt>
+                    <dt class="col-sm-3"><code>[[exp]]</code>, <code>&lt;exp&gt;</code>, etc.</dt>
                     <dd class="col-sm-9">Sostituito automaticamente con la <strong>data di scadenza</strong> del lotto.</dd>
 
-                    <dt class="col-sm-3"><code>[[firma]]</code></dt>
+                    <dt class="col-sm-3"><code>[[firma]]</code>, <code>$firma$</code></dt>
                     <dd class="col-sm-9">Sostituito con l'<strong>immagine della firma</strong> dell'utente che finalizza il certificato.</dd>
 
-                    <dt class="col-sm-3"><code>[[firma_d]]</code></dt>
+                    <dt class="col-sm-3"><code>[[firma_d]]</code>, <code>$firma_d$</code></dt>
                     <dd class="col-sm-9">Sostituito con la <strong>didascalia della firma</strong> (es. Nome e Cognome dell'utente).</dd>
                   </dl>
                 </div>
@@ -202,14 +203,17 @@ use Illuminate\Support\Facades\Storage;
                 <div class="card-header"><h5 class="card-title">Tag a compilazione manuale</h5></div>
                 <div class="card-body">
                   <dl class="row">
-                    <dt class="col-sm-3"><code>[[fcont]]</code></dt>
+                    <dt class="col-sm-3"><code>[[fcont]]</code>, etc.</dt>
                     <dd class="col-sm-9">Genera un campo per inserire la <strong>data di approvazione</strong> del certificato.</dd>
 
-                    <dt class="col-sm-3"><code>[[id]]</code></dt>
-                    <dd class="col-sm-9">Genera un campo per inserire la <strong>spunta di idoneità</strong> (es. ☑).</dd>
+                    <dt class="col-sm-3"><code>[[id]]</code>, <code>[[nid]]</code>, etc.</dt>
+                    <dd class="col-sm-9">Genera un menu a tendina per la <strong>spunta di idoneità/non idoneità</strong> (es. ☑ o ☐).</dd>
 
-                    <dt class="col-sm-3"><code>[[nid]]</code></dt>
-                    <dd class="col-sm-9">Simile a <code>&lt;id&gt;</code>, usato per la <strong>non idoneità</strong> (es. ☐).</dd>
+                    <dt class="col-sm-3">Qualsiasi altro tag</dt>
+                    <dd class="col-sm-9">
+                        <p>Qualsiasi altro testo racchiuso tra <code>[[...]]</code>, <code>[...]</code>, <code>&lt;...&gt;</code>, o <code>$...$</code> (es. <code>[[aspetto]]</code>, <code>&lt;colore&gt;</code>) verrà trasformato in un <strong>campo di testo semplice</strong>.</p>
+                        <p class="mb-0">Questo ti permette di creare nuovi campi personalizzati direttamente nel Master senza modificare il codice.</p>
+                    </dd>
                   </dl>
                 </div>
               </div>
@@ -218,48 +222,13 @@ use Illuminate\Support\Facades\Storage;
 
           <div class="alert alert-warning">
             <h5 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Consiglio per la creazione dei TAG</h5>
+            <p>
+              Per garantire il massimo della compatibilità, <strong>usa sempre il formato con le doppie parentesi quadre (es. <code>[[nome_tag]]</code>)</strong>. È il più affidabile e previene errori di formattazione che possono verificarsi con Google Docs.
+            </p>
             <p class="mb-0">
               Dato che Google Docs può aggiungere formattazioni "nascoste" che compromettono il riconoscimento dei tag, si consiglia di <strong>scrivere il tag in un editor di testo semplice</strong> (come Blocco Note/Notepad) e poi <strong>copiarlo e incollarlo</strong> nel documento Master. Questo garantisce che il tag sia "pulito" e venga riconosciuto correttamente dal sistema.
             </p>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Modal per problemi con i TAG -->
-  <div class="modal fade" id="tagProblemModal" tabindex="-1" aria-labelledby="tagProblemModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="tagProblemModalLabel">Problemi con l'individuazione dei TAG?</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body" id="tagProblemModalBody">
-          <p>A volte, i tag (es. <code>[[fcont]]</code> o <code>&lt;fcont&gt;</code>) non vengono evidenziati in giallo a causa di formattazioni nascoste applicate nel documento Google Docs.</p>
-          <p>Ad esempio, se solo una parte del tag è in grassetto o corsivo, il sistema potrebbe non riconoscerlo correttamente.</p>
-          <div class="alert alert-info">
-            <strong>Consiglio:</strong> Per evitare problemi, è preferibile usare la nuova sintassi con le doppie parentesi quadre (es. <code>[[fcont]]</code>). Questo formato è più robusto e meno soggetto a errori di formattazione.
-            <hr>
-            <p class="mb-0">Se un tag non viene riconosciuto, la soluzione migliore è aprire il documento Master originale e sostituire il tag problematico. Per essere sicuri, <strong>scrivete il tag in un editor di testo semplice (es. Notepad) e poi incollatelo nel documento</strong>.</p>
-          </div>
-          <div class="alert alert-warning" role="alert">
-            <strong>Attenzione:</strong> La correzione sul provvisorio non è definitiva. Per assicurarti che il problema non si ripresenti in futuro, è <strong>necessario modificare il documento Master originale</strong>. Avvisa l'amministratore di sistema per questa operazione.
-          </div>
-          <div class="card card-danger card-outline mt-3">
-            <div class="card-header">
-              <h5 class="card-title"><i class="fas fa-shield-alt"></i> Nota sulla Sicurezza</h5>
-            </div>
-            <div class="card-body">
-              <p class="card-text">La modifica diretta del documento provvisorio è una procedura da usare solo in casi eccezionali e <strong>dovrebbe essere evitata</strong>. Accedere al documento permette di bypassare i controlli di sicurezza pensati per isolare i soli campi di input, aprendo alla possibilità di alterare qualsiasi parte del certificato.</p>
-              <p class="card-text"><strong>Ogni modifica effettuata direttamente su Google Docs viene tracciata.</strong> Sarà sempre possibile risalire a chi ha effettuato le modifiche e quando.</p>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer" id="tagProblemModalFooter">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Annulla</button>
-          <a href="https://docs.google.com/document/d/{{ $id_provv }}/edit" target="_blank" class="btn btn-primary">Correggi Provvisorio</a>
         </div>
       </div>
     </div>

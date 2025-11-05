@@ -179,16 +179,78 @@ class ControllerMaster extends Controller
             return response()->json($result);
         }
         
+        // NUOVA LOGICA: Gestisce la richiesta per ottenere tutti gli ID filtrati
+        if ($request->has('action') && $request->input('action') == 'get_all_filtered_ids') {
+            try {
+                $query = tbl_master::from('tbl_master as m')
+                    ->select('m.id_doc') // Selezioniamo solo l'id_doc
+                    ->where('m.dele', '=', 0)
+                    ->where('m.obsoleti', '<>', 1);
+
+                // Applichiamo gli stessi filtri della tabella
+
+                // Gestione del filtro custom per i tag essenziali mancanti
+                $customFilter = $request->input('custom_filter');
+                if ($customFilter === 'tag_essenziali_mancanti') {
+                    $query->where(function($q) {
+                        $q->where(DB::raw("!LOCATE('lt', m.tags_found) OR !LOCATE('exp', m.tags_found) OR !LOCATE('pdate', m.tags_found)"));
+                    })
+                    ->whereNotNull('m.last_scan');
+                }
+
+                // Applica ricerca per colonna (se presente nella richiesta)
+                $columns = $request->input('columns');
+                $hasColumnSearch = false;
+                if ($columns) {
+                    foreach ($columns as $column) {
+                        if (!empty($column['search']['value'])) {
+                            $hasColumnSearch = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ($hasColumnSearch) {
+                    if ($columns) {
+                        $searchValue = $columns[1]['search']['value'] ?? null;
+                        if ($searchValue) { $query->where('m.real_name', 'like', '%'.$searchValue.'%'); }
+
+                        $searchValue = $columns[2]['search']['value'] ?? null;
+                        if ($searchValue) {
+                            $query->where(function($q) use ($searchValue) {
+                                $q->where('m.rev', 'like', '%'.$searchValue.'%')
+                                  ->orWhere('m.data_rev', 'like', '%'.$searchValue.'%')
+                                  ->orWhere(DB::raw("DATE_FORMAT(m.data_rev, '%d-%m-%Y')"), 'like', '%'.$searchValue.'%');
+                            });
+                        }
+
+                        $searchValue = $columns[4]['search']['value'] ?? null;
+                        if ($searchValue) {
+                            if (strpos(strtolower($searchValue), 'mai') !== false) { $query->whereNull('m.last_scan'); } 
+                            else { $query->where('m.tags_found', 'like', '%'.$searchValue.'%'); }
+                        }
+                    }
+                } elseif (!empty($request->input('search.value'))) {
+                    // Ricerca globale
+                    $searchValue = $request->input('search.value');
+                    $query->where('m.real_name', 'like', "%{$searchValue}%");
+                }
+
+                $all_ids = $query->pluck('m.id_doc')->all();
+                return response()->json(['success' => true, 'ids' => $all_ids]);
+            } catch (\Exception $e) {
+                \Log::error("Errore get_all_filtered_ids: " . $e->getMessage());
+                return response()->json(['success' => false, 'message' => 'Errore del server nel recuperare gli ID.'], 500);
+            }
+        }
+
         // Controllo robusto per DataTables: verifica se è una richiesta AJAX o se contiene il parametro 'draw'.
         if ($request->ajax() || $request->has('draw')) {
             try {
                 $query = tbl_master::from('tbl_master as m')
-                    ->select('m.id', 'm.id_doc', 'm.id_clone_from', 'm.real_name', 'm.obsoleti', 'm.rev', 'm.data_rev', 'm.created_at', 'm.updated_at', 'm.last_scan')
+                    ->select('m.id', 'm.id_doc', 'm.id_clone_from', 'm.real_name', 'm.obsoleti', 'm.rev', 'm.data_rev', 'm.created_at', 'm.updated_at', 'm.last_scan', 'm.tags_found')
                     ->where('m.dele', '=', 0)
                     ->where('m.obsoleti', '<>', 1);
-
-                // Aggiungo le colonne dei tag al select
-                $query->addSelect('m.tag_lt', 'm.tag_exp', 'm.tag_fcont', 'm.tag_pdate', 'm.tag_id', 'm.tag_nid');
 
                 // Conteggio totale record senza filtri (ma con le clausole where iniziali e tutte le select)
                 $totalData = $query->clone()->count();
@@ -199,9 +261,7 @@ class ControllerMaster extends Controller
                 $customFilter = $request->input('custom_filter');
                 if ($customFilter === 'tag_essenziali_mancanti') {
                     $filteredQuery->where(function($q) {
-                        $q->where('m.tag_lt', '=', 0)
-                          ->orWhere('m.tag_exp', '=', 0)
-                          ->orWhere('m.tag_pdate', '=', 0);
+                        $q->where(DB::raw("!LOCATE('lt', m.tags_found) OR !LOCATE('exp', m.tags_found) OR !LOCATE('pdate', m.tags_found)"));
                     })
                     // Aggiungiamo questa condizione per escludere quelli mai scansionati, che non hanno tag rossi ma una dicitura a parte
                     ->whereNotNull('m.last_scan');
@@ -239,11 +299,8 @@ class ControllerMaster extends Controller
                         $searchValue = $columns[4]['search']['value'] ?? null;
                         if ($searchValue) { // Tag Rilevati
                             $searchTag = strtolower(trim($searchValue));
-                            $validTags = ['lt', 'exp', 'fcont', 'pdate', 'id', 'nid'];
-    
-                            if (in_array($searchTag, $validTags)) {
-                                $tagColumn = 'm.tag_' . $searchTag;
-                                $filteredQuery->where($tagColumn, '=', 1);
+                            if (!empty($searchTag) && $searchTag !== 'mai') {
+                                $filteredQuery->where('m.tags_found', 'like', '%'.$searchTag.'%');
                             } elseif (strpos($searchTag, 'mai') !== false || strpos($searchTag, 'rosso') !== false) {
                                 $filteredQuery->whereNull('m.last_scan');
                             } else {
@@ -404,40 +461,52 @@ class ControllerMaster extends Controller
     } 
 
     public function verifica_tag_master($ids) {
-        $defined_tags = ['lt', 'exp', 'fcont', 'pdate', 'id', 'nid'];
+        // I tag da verificare ora arrivano dalla richiesta, ma per ora li ignoriamo e cerchiamo TUTTI i tag.
+        // La logica per usare i tag specifici può essere aggiunta se necessario.
+        // $tags_to_check = json_decode($request->input('tags', '[]'), true);
+
         $client = new \Google_Client();
         $client->setClientId(env('GOOGLE_DRIVE_CLIENT_ID'));
         $client->setClientSecret(env('GOOGLE_DRIVE_CLIENT_SECRET'));
         $client->refreshToken(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
         $service = new \Google_Service_Drive($client);
-
+    
         $processed_count = 0;
-
+    
         foreach ($ids as $id_doc) {
             try {
                 $response = $service->files->export($id_doc, 'text/html', ['alt' => 'media']);
                 $content = $response->getBody()->getContents();
-
-                $tag_updates = [];
-                foreach ($defined_tags as $tag) {
-                
-                    // Pattern per cercare <tag>, &lt;tag&gt;, [[tag]], [tag].
-                    $pattern = "/(&lt;{$tag}&gt;|<{$tag}>|\\[\\[{$tag}\\]\\]|\\[{$tag}\\])/i";
-                
-                    if (preg_match($pattern, $content)) {
-                        $tag_updates['tag_' . $tag] = 1;
-                    } else {
-                        $tag_updates['tag_' . $tag] = 0;
-                    }
-                    
+    
+                // Regex unificata per trovare tutti i tipi di tag: [[tag]], [tag], &lt;tag&gt;, $tag$
+                // Il gruppo di cattura interno ([a-zA-Z0-9_]+) estrae solo il nome del tag.
+                $pattern = '/(?:\[\[([a-zA-Z0-9_]+)\]\]|\[([a-zA-Z0-9_]+)\]|&lt;([a-zA-Z0-9_]+)&gt;|\$([a-zA-Z0-9_]+)\$)/';
+                preg_match_all($pattern, $content, $matches);
+    
+                // Uniamo tutti i nomi dei tag catturati dai diversi gruppi della regex
+                $found_tags = [];
+                for ($i = 1; $i < count($matches); $i++) {
+                    $found_tags = array_merge($found_tags, array_filter($matches[$i]));
                 }
-                
+    
+                // Rimuoviamo i tag 'firma' e 'firma_d' dall'array dei tag trovati.
+                $filtered_tags = array_filter($found_tags, function($tag) {
+                    return !in_array($tag, ['firma', 'firma_d']);
+                });
 
-                if (!empty($tag_updates)) {
-                    // Aggiungo anche l'aggiornamento della data di scansione
-                    $update_data = array_merge($tag_updates, ['last_scan' => now()]);
-                    tbl_master::where('id_doc', $id_doc)->update($update_data);
-                }
+                // Rimuoviamo duplicati e ordiniamo i tag filtrati.
+                $unique_tags = array_unique($filtered_tags);
+                sort($unique_tags);
+
+                // Convertiamo l'array di tag in una stringa separata da virgole
+                $tags_string = implode(',', $unique_tags);
+    
+                // Aggiorniamo il DB con la stringa dei tag e la data di scansione
+                tbl_master::where('id_doc', $id_doc)->update([
+                    'tags_found' => $tags_string,
+                    'last_scan' => now()
+                ]);
+    
                 $processed_count++;
                 
             } catch (\Exception $e) {
@@ -447,7 +516,7 @@ class ControllerMaster extends Controller
                 continue;
             }
         }
-
+    
         return [
             'success' => true, 
             'message' => "Verifica completata. Documenti processati: " . $processed_count . "/" . count($ids),

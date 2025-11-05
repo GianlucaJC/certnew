@@ -88,6 +88,11 @@ Route::middleware('auth')->group(function () {
 
     //per aggiornare tutti i riferimenti dei master nella tabella locale (tbl_master)
     Route::get('list_update', [ 'as' => 'list_update', 'uses' => 'App\Http\Controllers\MainController@list_update']);
+    
+    // Rotta per il refresh del token CSRF
+    Route::get('/refresh-csrf', function () {
+        return response()->json(['token' => csrf_token()]);
+    })->name('refresh-csrf');
 
 });
 

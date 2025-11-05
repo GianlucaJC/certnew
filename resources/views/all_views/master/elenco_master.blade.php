@@ -55,6 +55,23 @@ use Illuminate\Support\Facades\Storage;
 		<form method='post' action="{{ route('elenco_master') }}" id='frm_articolo' name='frm_articolo' autocomplete="off">
       <input name="_token" type="hidden" value="{{ csrf_token() }}" id='token_csrf'>
       <meta name="csrf-token" content="{{{ csrf_token() }}}">
+      <meta name="base-url" content="{{ url('/') }}">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="card card-primary card-outline mb-3">
+              <div class="card-header">
+                <h5 class="card-title">Operazioni Master</h5>
+              </div>
+              <div class="card-body d-flex flex-wrap align-items-center">
+                <button type="button" class="btn btn-primary btn-sm m-1" onclick='edit_rev(0)'><i class="fas fa-plus-circle"></i> Nuovo Master</button>
+                <button type="button" class="btn btn-info btn-sm m-1" id="btn_verifica_tag_master" onclick="showTagSelectionModal()"><i class="fas fa-tags"></i> Verifica TAG</button>
+                <button type="button" class="btn btn-secondary btn-sm m-1" id="filtra_mai_scansionati"><i class="fas fa-eye-slash"></i> Solo mai scansionati</button>
+                <button type="button" class="btn btn-warning btn-sm m-1" id="filtra_tag_mancanti"><i class="fas fa-exclamation-triangle"></i> Filtra tag essenziali non rilevati</button>
+                <button type="button" class="btn btn-default btn-sm m-1" id="reset_filtri"><i class="fas fa-undo"></i> Reset Filtri</button>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="row">
           <div class="col-md-12">
             <table id='tbl_articoli' class="display">
@@ -86,14 +103,6 @@ use Illuminate\Support\Facades\Storage;
           </div>
 
         </div>
-        <div id=''>
-          <button type="button" class="btn btn-primary btn-sm" onclick='edit_rev(0)'><i class="fas fa-plus-circle"></i> Nuovo Master</button>
-          <button type="button" class="btn btn-info btn-sm" id="btn_verifica_tag_master" onclick="showVerificationChoice()"><i class="fas fa-tags"></i> Verifica TAG</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="filtra_mai_scansionati"><i class="fas fa-eye-slash"></i> Solo mai scansionati</button>
-          <button type="button" class="btn btn-warning btn-sm" id="filtra_tag_mancanti"><i class="fas fa-exclamation-triangle"></i> Filtra tag essenziali non rilevati</button>
-          <button type="button" class="btn btn-default btn-sm" id="reset_filtri"><i class="fas fa-undo"></i> Reset Filtri</button>
-
-        </div>
 
 
 		</form>
@@ -119,6 +128,44 @@ use Illuminate\Support\Facades\Storage;
       <div class="modal-footer">
 		    <div id='altri_btn'></div>
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modale per la selezione dei TAG da verificare -->
+<div class="modal fade" id="tagSelectionModal" tabindex="-1" role="dialog" aria-labelledby="tagSelectionModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tagSelectionModalLabel">Seleziona i TAG da Verificare</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Seleziona i tag standard da cercare o inseriscine di nuovi.</p>
+        <div class="form-group">
+            <h6>Tag Standard</h6>
+            <div class="row">
+                <div class="col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" value="lt" id="tag_lt_check" checked><label class="form-check-label" for="tag_lt_check">lt (essenziale)</label></div></div>
+                <div class="col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" value="exp" id="tag_exp_check" checked><label class="form-check-label" for="tag_exp_check">exp</label></div></div>
+                <div class="col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" value="pdate" id="tag_pdate_check" checked><label class="form-check-label" for="tag_pdate_check">pdate</label></div></div>
+                <div class="col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" value="fcont" id="tag_fcont_check" checked><label class="form-check-label" for="tag_fcont_check">fcont</label></div></div>
+                <div class="col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" value="id" id="tag_id_check" checked><label class="form-check-label" for="tag_id_check">id</label></div></div>
+                <div class="col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" value="nid" id="tag_nid_check" checked><label class="form-check-label" for="tag_nid_check">nid</label></div></div>
+            </div>
+        </div>
+        <hr>
+        <div class="form-group">
+            <label for="custom_tags"><h6>Tag Personalizzati</h6></label>
+            <input type="text" class="form-control" id="custom_tags" placeholder="Es: aspetto, colore, ph (separati da virgola)">
+            <small class="form-text text-muted">Inserisci i nomi dei tag senza parentesi, separati da una virgola.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-primary" onclick="startVerificationProcess()">Avvia Verifica</button>
       </div>
     </div>
   </div>
@@ -193,6 +240,6 @@ use Illuminate\Support\Facades\Storage;
 	
 	
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.082"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.107"></script>
 
 @endsection

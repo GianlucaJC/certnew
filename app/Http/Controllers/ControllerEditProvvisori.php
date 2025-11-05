@@ -155,30 +155,31 @@ class ControllerEditProvvisori extends Controller
 	}	
 
 	function render_input($ref_tag,$sca) {
-		$ref_tag=str_replace("[","",$ref_tag);
-		$ref_tag=str_replace("]","",$ref_tag);
-		$place = $ref_tag; // Default placeholder
+		// Pulisce il tag dai suoi delimitatori per ottenere il nome puro
+		$tag_name = preg_replace('/^(&lt;|\[\[|\[|\$)|(&gt;|\]\]|\]|\$)$/', '', $ref_tag);
+		$place = $tag_name; // Placeholder di default
 		$html = "";
-
-		if ($ref_tag == "pdate" || $ref_tag == "exp" || $ref_tag == "fcont") {
-			if ($ref_tag == "pdate") $place = "Data produzione";
-			if ($ref_tag == "exp") $place = "Data scadenza";
-			if ($ref_tag == "fcont") $place = "Data approvazione";
-			$html = "<input type='date' class='dati' data-id_ref='$ref_tag' id='tg$sca' data-id='tg$sca' data-tag='$ref_tag' style='width:150px' placeholder='$place'>";
-		} elseif ($ref_tag == "id" || $ref_tag == "nid") {
-			$lbl = ($ref_tag == "id") ? "Idoneo" : "Non idoneo";
+	
+		// Gestione dei tag speciali conosciuti
+		if ($tag_name == "pdate" || $tag_name == "exp" || $tag_name == "fcont") {
+			if ($tag_name == "pdate") $place = "Data produzione";
+			if ($tag_name == "exp") $place = "Data scadenza";
+			if ($tag_name == "fcont") $place = "Data approvazione";
+			$html = "<input type='date' class='dati' data-id_ref='$tag_name' id='tg$sca' data-id='tg$sca' data-tag='$tag_name' style='width:150px' placeholder='$place'>";
+		} elseif ($tag_name == "id" || $tag_name == "nid") {
+			$lbl = ($tag_name == "id") ? "Idoneo" : "Non idoneo";
 			$html = "<div class='form-group'>
 						<label for='tg$sca'>$lbl</label>
-						<select class='form-select dati' data-id_ref='$ref_tag' id='tg$sca' data-id='tg$sca' data-tag='$ref_tag'>
+						<select class='form-select dati' data-id_ref='$tag_name' id='tg$sca' data-id='tg$sca' data-tag='$tag_name'>
 							<option value=''>-- Seleziona --</option>
 							<option value='☑'>Idoneo (con spunta)</option>
 							<option value='☐'>Non Idoneo (senza spunta)</option>
 						</select>
 					</div>";
 		} else {
-			// Questo blocco gestisce 'lt' e qualsiasi altro tag generico come input di testo.
-			if ($ref_tag == "lt") $place = "Lotto"; // Placeholder specifico per 'lt'
-			$html = "<input type='text' class='dati' data-id_ref='$ref_tag' id='tg$sca' data-id='tg$sca' data-tag='$ref_tag' style='width:80px' placeholder='$place'>";
+			// Blocco generico per tutti gli altri tag (conosciuti come 'lt' o custom)
+			if ($tag_name == "lt") $place = "Lotto"; // Placeholder specifico per 'lt'
+			$html = "<input type='text' class='dati' data-id_ref='$tag_name' id='tg$sca' data-id='tg$sca' data-tag='$tag_name' style='width:150px' placeholder='$place'>";
 		}
 		return $html;
 	}
@@ -301,37 +302,36 @@ class ControllerEditProvvisori extends Controller
 		$tag_O="&lt;";
 		$tag_C="&gt;";
 
-		// Regex unificata per trovare tutti i tipi di tag in una sola passata.
-		// Supporta sia il formato classico (&lt;tag&gt;) che quello robusto ($tag$).
-		// AGGIUNTO: supporto per il nuovo formato [[tag]]
-		// Questa logica è ora allineata a quella usata in edit_provvisorio.blade.php
-		$pattern = '/(?:\[\[[a-zA-Z_0-9]+\]\]|\[[a-zA-Z_0-9]+\]|&lt;[a-zA-Z][^&]*?&gt;|\$[a-zA-Z_0-9]+\$)/';
+		// Regex unificata per trovare tutti i tipi di tag: [[tag]], [tag], &lt;tag&gt;, $tag$
+		// Il gruppo di cattura interno ([a-zA-Z0-9_]+) estrae solo il nome del tag.
+		$pattern = '/(?:\[\[([a-zA-Z0-9_]+)\]\]|\[([a-zA-Z0-9_]+)\]|&lt;([a-zA-Z0-9_]+)&gt;|\$([a-zA-Z0-9_]+)\$)/';
 		preg_match_all($pattern, $content, $matches);
 
-		$all_found_tags = $matches[0];
-		$tags = [];
+		$all_found_tags = $matches[0]; // Tutti i tag trovati con i delimitatori (es. [[lt]], $firma$)
+		$tags_compilabili = [];
 
-		// Filtra i tag per escludere quelli non compilabili manualmente
+		// Filtra i tag per escludere quelli non compilabili manualmente (come firma e firma_d)
 		foreach ($all_found_tags as $tag_ref) {
 			// Pulisce il tag dai delimitatori per analizzarne il contenuto
 			$tag_content = preg_replace('/(?:&lt;|\$|\[\[|\]\]|&gt;)/', '', $tag_ref);
 			if (!in_array($tag_content, ['firma', 'firma_d'])) {
-				$tags[] = $tag_ref;
+				$tags_compilabili[] = $tag_ref;
 			}
 		}
 
-		$num_tag = count($tags);
+		// num_tag ora conta solo i tag che non sono 'firma' o 'firma_d'.
+		$num_tag = count($tags_compilabili);
 
 		$info=array();
 		$info['num_tag']=$num_tag;
-		$info['tags']=$tags;
+		$info['tags']=$tags_compilabili; // Restituisce solo i tag compilabili
 		$info['content']=$str_all;
 		return $info; // num_tag, tags, content
 	}
 
 
     public static function set_fill($documentId,$info_lotto) {
-		//function utilizzata per il completamento dei tag automatici (es: lotto e scadenza)
+		// Funzione utilizzata per il completamento dei tag automatici (es: lotto e scadenza)
 		$client = ControllerEditprovvisori::getClient("docs");
 		$service = new \Google_Service_Docs($client);
 		//open doc and edit
@@ -341,12 +341,13 @@ class ControllerEditProvvisori extends Controller
 		foreach ($info_lotto as $tag=>$modifiedText ) {
 			// Per ogni dato ricevuto (es. 'lt'), creo un array di tutti i possibili
 			// formati di tag da cercare nel documento (es. [[lt]], <lt>, $lt$, etc.).
+			if (empty($modifiedText)) continue; // Salta se il valore è vuoto
 			$tag_formats_to_replace = [
 				"<$tag>",
 				"&lt;$tag&gt;",
 				"$$tag$",
 				"[[$tag]]",
-				"[$tag]"
+				"[$tag]" // Aggiungo anche il formato con parentesi singole per sicurezza				
 			];
 
 			foreach ($tag_formats_to_replace as $tag_to_find) {

@@ -297,12 +297,13 @@ function load_js() {
     setTimeout(function() { 
       const iframeBody = $('#ifr_doc').contents().find('body');
       if (iframeBody.length > 0) {
-        // Sovrascrivo gli stili di Google Docs usando !important.
-        // Rimuovo il max-width per evitare che il contenuto sia limitato in larghezza.
-        iframeBody[0].style.setProperty('max-width', 'none', 'important');
-        // Imposto una larghezza fissa (es. 900px) e uso i margini automatici
-        // per centrare il blocco del corpo orizzontalmente.
-        iframeBody[0].style.setProperty('width', '900px', 'important');
+        // Sovrascrivo gli stili di Google Docs per simulare un foglio A4.
+        // La larghezza standard di un A4 a 96 DPI è circa 794px.
+        iframeBody[0].style.setProperty('width', '794px', 'important');
+        iframeBody[0].style.setProperty('margin', '0 auto', 'important'); // Centra il corpo
+        iframeBody[0].style.setProperty('padding', '20px', 'important'); // Aggiunge un po' di respiro
+        iframeBody[0].style.setProperty('box-sizing', 'content-box', 'important');
+        iframeBody[0].style.setProperty('background', 'white', 'important');
       }
-    }, 200); // Un leggero ritardo per garantire che il DOM sia pronto.
+    }, 200); // Ritardo per garantire che il DOM dell'iframe sia pronto.
 }

@@ -71,9 +71,16 @@ var isCancelled = false;
 function cancel_operation() {
     if (!confirm("Sei sicuro di voler annullare l'operazione?")) return;
     
+    const cancelBtn = $("#btn_cancel_op");
     isCancelled = true;
-    $("#btn_cancel_op").html('<i class="fas fa-spinner fa-spin"></i> Annullamento in corso...');
-    $("#btn_cancel_op").attr('disabled', true);
+    cancelBtn.html('<i class="fas fa-spinner fa-spin"></i> Annullamento in corso...');
+    cancelBtn.attr('disabled', true);
+}
+
+// Funzione per ricaricare la tabella
+function refreshTable() {
+    $('#tbl_articoli').DataTable().ajax.reload(null, false); // false per mantenere la paginazione
+    $("#div_progress").hide(); // Nasconde il box dei messaggi
 }
 
 
@@ -81,8 +88,15 @@ function cancel_operation() {
 function make_call(indice) {
     // Se l'utente ha annullato, interrompi il ciclo
     if (isCancelled) {
-        $("#div_progress").html('<div class="alert alert-warning mt-2" role="alert">Operazione annullata dall\'utente.</div>');
+        const html = `<div class="alert alert-warning mt-2" role="alert">
+                        Operazione annullata dall'utente.
+                        <hr>
+                        <button class="btn btn-primary" onclick="refreshTable()">Aggiorna Tabella</button>
+                      </div>`;
+        $("#div_progress").html(html);
         $("#div_crea_provv").show(200); // Mostra di nuovo il pulsante per creare
+        // Resetta il pulsante di annullamento per operazioni future
+        $("#btn_cancel_op").html('Annulla Operazione').attr('disabled', false);
         return;
     }
 
@@ -122,12 +136,14 @@ function make_call(indice) {
             setTimeout(() => make_call(indice), 100);
         } else {
             // Operazione completata
-            html=`<div class="alert alert-success mt-2" role="alert">
-                Scansione lotti eseguita!<hr>
-                <p>Puoi eseguire il refresh della tabella per vedere l'esito dell'associazione master.</p>
-            </div>`
-            // Nasconde il pulsante di creazione e mostra il messaggio di successo
-            $("#div_crea_provv").hide();
+            const html = `<div class="alert alert-success mt-2" role="alert">
+                            Scansione lotti eseguita!
+                            <hr>
+                            <p>Puoi aggiornare la tabella per vedere l'esito dell'associazione master.</p>
+                            <button class="btn btn-success" onclick="refreshTable()">Aggiorna Tabella</button>
+                          </div>`;
+            // Mostra di nuovo il pulsante di creazione e il messaggio di successo
+            $("#div_crea_provv").show(200);
             $("#div_progress").html(html);
             $("#div_progress").show();
         }
@@ -147,6 +163,9 @@ function crea_provv() {
 function crea_provv_confirm() {
     // Resetta lo stato di annullamento prima di iniziare
     isCancelled = false;
+    // Resetta il pulsante di annullamento
+    const cancelBtn = $("#btn_cancel_op");
+    cancelBtn.html('Annulla Operazione').attr('disabled', false);
 
     $('#confirmModal').modal('hide');
     arr_info=new Array()
