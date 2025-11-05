@@ -131,15 +131,19 @@ $(document).ready( function () {
                         return '<span class="text-danger"><i>Nessun tag trovato</i></span>';
                     }
 
+                    const tagCount = tags_array.length;
+                    const countBadge = `<span class="badge badge-secondary badge-pill mr-2" title="Numero di tag trovati">${tagCount}</span>`;
+
                     const essential_tags = ['lt', 'exp', 'pdate'];
-                    let tagsHtml = '<div class="d-flex flex-wrap">';
+                    let tagsBadgesHtml = '';
                     tags_array.forEach(tag => {
                         // I tag essenziali (lt, exp, pdate) sono in verde, gli altri in blu.
                         const badgeClass = essential_tags.includes(tag) ? 'bg-success' : 'bg-primary';
-                        tagsHtml += `<span class="badge ${badgeClass} m-1">${tag.toUpperCase()}</span>`;
+                        tagsBadgesHtml += `<span class="badge ${badgeClass} m-1">${tag.toUpperCase()}</span>`;
                     });
 
-                    tagsHtml += '</div>';
+                    // Combina il contatore e i badge dei tag
+                    const tagsHtml = `<div class="d-flex align-items-center">${countBadge}<div class="d-flex flex-wrap">${tagsBadgesHtml}</div></div>`;
                     return tagsHtml;
                 }
             }
