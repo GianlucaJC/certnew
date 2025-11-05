@@ -17,7 +17,14 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    public const HOME = '/firstpage';
+    public static function home()
+    {
+        if (config('menu.full_menu_enabled', true) === false) {
+            return '/elenco_master';
+        }
+
+        return '/firstpage';
+    }
 
     /**
      * Define your route model bindings, pattern filters, and other route configuration.
