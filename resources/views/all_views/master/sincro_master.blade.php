@@ -57,6 +57,9 @@
                         <button type="button" class="btn btn-success mt-2 mt-md-0 d-none" id="uploadToDriveBtn" disabled>
                             <i class="fas fa-cloud-upload-alt"></i> Crea Master in Drive di Google
                         </button>
+                        <button type="button" class="btn btn-warning mt-2 mt-md-0 d-none" id="excludeFilesBtn" disabled>
+                            <i class="fas fa-ban"></i> Escludi Selezionati
+                        </button>
                         <button type="button" class="btn btn-danger d-none" id="cancelSyncBtn">
                             <i class="fas fa-times-circle"></i> Annulla
                         </button>
@@ -85,10 +88,13 @@
 
                         <div class="results-table mt-4 d-none" id="syncResultsContainer">
                             <h5>File Aggiunti:</h5>
+                            <div class="mb-2">
+                                <a href="javascript:void(0)" id="manageExclusionsLink">Gestisci Esclusioni</a>
+                            </div>
                             <table class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
-                                        <th>Nome File</th>
+                                        <th><input type="checkbox" id="selectAllCheckbox"> Nome File</th>
                                     </tr>
                                 </thead>
                                 <tbody id="addedFilesList">
@@ -101,6 +107,33 @@
             </div><!-- /.container-fluid -->
         </div>
         <!-- /.content -->
+    </div>
+
+    <!-- Modal per la gestione delle esclusioni -->
+    <div class="modal fade" id="exclusionsModal" tabindex="-1" role="dialog" aria-labelledby="exclusionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exclusionsModalLabel">File Master Esclusi</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Questi file sono stati esclusi e non verranno caricati su Google Drive. Selezionali e clicca su "Ripristina" per renderli nuovamente disponibili.</p>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr><th><input type="checkbox" id="selectAllExcludedCheckbox"> Nome File</th></tr>
+                        </thead>
+                        <tbody id="excludedFilesList"></tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Chiudi</button>
+                    <button type="button" class="btn btn-primary" id="restoreFilesBtn">Ripristina Selezionati</button>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
 
@@ -122,6 +155,41 @@
             let isUploadingLocal = false;
             let isLocalUploadCancelled = false;
 
+            // Funzione per popolare la UI con i file
+            function populateUiWithFiles(files) {
+                filesToUpload = files;
+                $('#addedFilesList').empty();
+
+                if (files.length > 0) {
+                    $('#syncResultsContainer').removeClass('d-none');
+                    $('#selectAllCheckbox').prop('checked', false);
+                    files.forEach(filename => {
+                        $('#addedFilesList').append(`<tr><td><input type="checkbox" class="file-checkbox" value="${filename}"> ${filename}</td></tr>`);
+                    });
+                    $('#uploadToDriveBtn').removeClass('d-none').prop('disabled', false);
+                    $('#excludeFilesBtn').removeClass('d-none').prop('disabled', false);
+                    $('#syncStatusText').text(`Trovati ${files.length} nuovi file locali pronti per essere caricati su Google Drive.`);
+                } else {
+                    $('#syncStatusText').text("Nessun nuovo file locale da caricare. Tutti i master sono sincronizzati con il database.");
+                }
+            }
+
+            // Controlla i file pendenti al caricamento della pagina
+            function checkPendingUploads() {
+                const checkUrl = "{{ route('sincro_master.check_pending') }}";
+                fetch(checkUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.pending_files.length > 0) {
+                            $('#syncProgressBarContainer').removeClass('d-none');
+                            populateUiWithFiles(data.pending_files);
+                        }
+                    })
+                    .catch(error => console.error('Errore nel controllo dei file pendenti:', error));
+            }
+
+            checkPendingUploads(); // Esegui al caricamento
+
             $('#startSyncBtn').on('click', function() {
                 if (isSyncing) return;
 
@@ -129,6 +197,7 @@
                 isCancelled = false;
                 $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Sincronizzazione in corso...');
                 $('#cancelSyncBtn').removeClass('d-none');
+                $('#excludeFilesBtn').addClass('d-none').prop('disabled', true);
                 $('#uploadToDriveBtn').addClass('d-none').prop('disabled', true);
                 $('#syncProgressBarContainer').removeClass('d-none');
                 $('#syncResultsContainer').addClass('d-none');
@@ -155,17 +224,7 @@
 
                     if (data.success) {
                         $('#syncProgressBar').css('width', '100%').attr('aria-valuenow', 100).text('100%');
-                        $('#syncStatusText').text(data.message + ` Aggiunti ${data.added_files.length} file.`);
-                        filesToUpload = data.added_files;
-
-                        if (data.added_files.length > 0) {
-                            $('#syncResultsContainer').removeClass('d-none');
-                            data.added_files.forEach(filename => {
-                                $('#addedFilesList').append(`<tr><td>${filename}</td></tr>`);
-                            });
-                            // Abilita il bottone per l'upload solo se ci sono file
-                            $('#uploadToDriveBtn').removeClass('d-none').prop('disabled', false);
-                        }
+                        populateUiWithFiles(data.added_files);
                     } else {
                         $('#syncProgressBar').addClass('bg-danger');
                         $('#syncStatusText').text(`Errore: ${data.message}`);
@@ -213,6 +272,109 @@
                         startUploadProcess();
                     }
                 });
+            });
+
+            $('#excludeFilesBtn').on('click', function() {
+                const selectedFiles = $('.file-checkbox:checked').map(function() {
+                    return $(this).val();
+                }).get();
+
+                if (selectedFiles.length === 0) {
+                    Swal.fire('Attenzione', 'Nessun file selezionato da escludere.', 'warning');
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Conferma Esclusione',
+                    text: `Sei sicuro di voler escludere ${selectedFiles.length} file dal caricamento su Drive?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sì, escludi',
+                    cancelButtonText: 'Annulla'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const excludeUrl = "{{ route('sincro_master.exclude') }}";
+                        const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+                        fetch(excludeUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                            body: JSON.stringify({ filenames: selectedFiles })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire('Esclusi!', 'I file selezionati sono stati esclusi.', 'success');
+                                checkPendingUploads(); // Ricarica la lista dei file pendenti
+                                $('#syncResultsContainer').addClass('d-none');
+                                $('#uploadToDriveBtn').addClass('d-none');
+                                $('#excludeFilesBtn').addClass('d-none');
+                            } else {
+                                Swal.fire('Errore', data.message || 'Si è verificato un errore.', 'error');
+                            }
+                        }).catch(error => Swal.fire('Errore', `Errore di rete: ${error.message}`, 'error'));
+                    }
+                });
+            });
+
+            $('#manageExclusionsLink').on('click', function() {
+                const getExcludedUrl = "{{ route('sincro_master.get_excluded') }}";
+                fetch(getExcludedUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const list = $('#excludedFilesList');
+                            list.empty();
+                            $('#selectAllExcludedCheckbox').prop('checked', false);
+                            if (data.excluded_files.length > 0) {
+                                data.excluded_files.forEach(filename => {
+                                    list.append(`<tr><td><input type="checkbox" class="excluded-file-checkbox" value="${filename}"> ${filename}</td></tr>`);
+                                });
+                            } else {
+                                list.append('<tr><td>Nessun file escluso.</td></tr>');
+                            }
+                            $('#exclusionsModal').modal('show');
+                        } else {
+                            Swal.fire('Errore', data.message || 'Impossibile caricare i file esclusi.', 'error');
+                        }
+                    }).catch(error => Swal.fire('Errore', `Errore di rete: ${error.message}`, 'error'));
+            });
+
+            $('#restoreFilesBtn').on('click', function() {
+                const selectedToRestore = $('.excluded-file-checkbox:checked').map(function() {
+                    return $(this).val();
+                }).get();
+
+                if (selectedToRestore.length === 0) {
+                    Swal.fire('Attenzione', 'Nessun file selezionato da ripristinare.', 'warning');
+                    return;
+                }
+
+                const restoreUrl = "{{ route('sincro_master.restore') }}";
+                const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+                fetch(restoreUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify({ filenames: selectedToRestore })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('Ripristinati!', 'I file selezionati sono di nuovo disponibili per il caricamento.', 'success');
+                        $('#exclusionsModal').modal('hide');
+                        checkPendingUploads(); // Ricarica la lista dei file pendenti
+                    } else {
+                        Swal.fire('Errore', data.message || 'Si è verificato un errore.', 'error');
+                    }
+                }).catch(error => Swal.fire('Errore', `Errore di rete: ${error.message}`, 'error'));
+            });
+
+            $('#selectAllCheckbox').on('click', function() {
+                $('.file-checkbox').prop('checked', $(this).prop('checked'));
+            });
+            $('#selectAllExcludedCheckbox').on('click', function() {
+                $('.excluded-file-checkbox').prop('checked', $(this).prop('checked'));
             });
 
             async function startUploadProcess() {

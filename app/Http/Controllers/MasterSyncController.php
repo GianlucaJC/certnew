@@ -90,6 +90,29 @@ class MasterSyncController extends Controller
         }
     }
 
+    public function checkPending(Request $request)
+    {
+        try {
+            $pendingFiles = tbl_master::where('id_doc', 'LIKE', 'local_file_%')
+                                      ->pluck('real_name')
+                                      ->map(function ($name) {
+                                          // Aggiunge l'estensione .doc per coerenza con l'output della sincronizzazione
+                                          return $name . '.doc';
+                                      })
+                                      ->toArray();
+
+            return response()->json([
+                'success' => true,
+                'pending_files' => $pendingFiles
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Errore durante il controllo dei file pendenti: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore del server durante il controllo dei file pendenti.'
+            ], 500);
+        }
+    }
     public function uploadToDrive(Request $request)
     {
         $filename = $request->input('filename');
@@ -103,7 +126,10 @@ class MasterSyncController extends Controller
                 return response()->json(['success' => false, 'message' => "File locale non trovato: $filename"], 404);
             }
 
-            $filenameWithoutExtension = pathinfo($filename, PATHINFO_FILENAME);
+            // Rimuove l'estensione, che potrebbe essere .doc o .docx
+            $filenameWithoutExtension = preg_replace('/\\.[^.\\s]{3,4}$/', '', $filename);
+
+
 
             // Upload to Google Drive
             $client = new \Google_Client();
@@ -159,6 +185,54 @@ class MasterSyncController extends Controller
         } catch (\Exception $e) {
             Log::error("Errore durante l'upload del file locale: " . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Errore del server durante il caricamento del file.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function excludeFiles(Request $request)
+    {
+        try {
+            $filenames = $request->input('filenames', []);
+            if (empty($filenames)) {
+                return response()->json(['success' => false, 'message' => 'Nessun file selezionato.'], 400);
+            }
+
+            // Usa il campo 'obsoleti' con valore 3 per marcare come escluso
+            tbl_master::whereIn('real_name', $filenames)->update(['obsoleti' => 3]);
+
+            return response()->json(['success' => true, 'message' => 'File esclusi con successo.']);
+        } catch (\Exception $e) {
+            Log::error("Errore in excludeFiles: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Errore del server: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function getExcludedFiles()
+    {
+        try {
+            // Recupera i file marcati come esclusi (obsoleti = 3)
+            $excludedFiles = tbl_master::where('dele', 0)->where('obsoleti', 3)->pluck('real_name')->toArray();
+            return response()->json(['success' => true, 'excluded_files' => $excludedFiles]);
+        } catch (\Exception $e) {
+            Log::error("Errore in getExcludedFiles: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Errore del server: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function restoreFiles(Request $request)
+    {
+        try {
+            $filenames = $request->input('filenames', []);
+            if (empty($filenames)) {
+                return response()->json(['success' => false, 'message' => 'Nessun file selezionato.'], 400);
+            }
+
+            // Ripristina i file riportando 'obsoleti' a 0
+            tbl_master::whereIn('real_name', $filenames)->where('obsoleti', 3)->update(['obsoleti' => 0]);
+
+            return response()->json(['success' => true, 'message' => 'File ripristinati con successo.']);
+        } catch (\Exception $e) {
+            Log::error("Errore in restoreFiles: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Errore del server: ' . $e->getMessage()], 500);
         }
     }
 }

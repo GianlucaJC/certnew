@@ -94,6 +94,10 @@ Route::middleware('auth')->group(function () {
     Route::get('sincro-master', [MasterSyncController::class, 'index'])->name('sincro_master');
     Route::post('sincro-master/sync', [MasterSyncController::class, 'sync'])->name('sincro_master.sync');
     Route::post('sincro-master/upload-to-drive', [MasterSyncController::class, 'uploadToDrive'])->name('sincro_master.upload');
+    Route::get('sincro-master/check-pending', [MasterSyncController::class, 'checkPending'])->name('sincro_master.check_pending');
+    Route::post('sincro-master/exclude', [MasterSyncController::class, 'excludeFiles'])->name('sincro_master.exclude');
+    Route::get('sincro-master/get-excluded', [MasterSyncController::class, 'getExcludedFiles'])->name('sincro_master.get_excluded');
+    Route::post('sincro-master/restore', [MasterSyncController::class, 'restoreFiles'])->name('sincro_master.restore');
     Route::post('sincro-master/upload-local', [MasterSyncController::class, 'uploadLocal'])->name('sincro_master.upload_local');
 
     // Rotta per il refresh del token CSRF
