@@ -64,6 +64,10 @@
                             <i class="fas fa-times-circle"></i> Annulla
                         </button>
 
+                        <div class="mt-3">
+                            <a href="javascript:void(0)" id="manageExclusionsLink">Gestisci Esclusioni</a>
+                        </div>
+
                         <div class="progress-container mt-3 d-none" id="syncProgressBarContainer">
                             <div class="progress">
                                 <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="syncProgressBar">0%</div>
@@ -88,9 +92,6 @@
 
                         <div class="results-table mt-4 d-none" id="syncResultsContainer">
                             <h5>File Aggiunti:</h5>
-                            <div class="mb-2">
-                                <a href="javascript:void(0)" id="manageExclusionsLink">Gestisci Esclusioni</a>
-                            </div>
                             <table class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
@@ -172,6 +173,13 @@
                 } else {
                     $('#syncStatusText').text("Nessun nuovo file locale da caricare. Tutti i master sono sincronizzati con il database.");
                 }
+
+                // Se non ci sono più file, nascondi i contenitori
+                if (files.length === 0) {
+                    $('#syncResultsContainer').addClass('d-none');
+                    $('#uploadToDriveBtn').addClass('d-none');
+                    $('#excludeFilesBtn').addClass('d-none');
+                }
             }
 
             // Controlla i file pendenti al caricamento della pagina
@@ -183,6 +191,12 @@
                         if (data.success && data.pending_files.length > 0) {
                             $('#syncProgressBarContainer').removeClass('d-none');
                             populateUiWithFiles(data.pending_files);
+                        } else {
+                            // Se non ci sono file pendenti, assicurati che la UI sia pulita
+                            $('#syncResultsContainer').addClass('d-none');
+                            $('#addedFilesList').empty();
+                            $('#uploadToDriveBtn').addClass('d-none');
+                            $('#excludeFilesBtn').addClass('d-none');
                         }
                     })
                     .catch(error => console.error('Errore nel controllo dei file pendenti:', error));
@@ -306,9 +320,6 @@
                             if (data.success) {
                                 Swal.fire('Esclusi!', 'I file selezionati sono stati esclusi.', 'success');
                                 checkPendingUploads(); // Ricarica la lista dei file pendenti
-                                $('#syncResultsContainer').addClass('d-none');
-                                $('#uploadToDriveBtn').addClass('d-none');
-                                $('#excludeFilesBtn').addClass('d-none');
                             } else {
                                 Swal.fire('Errore', data.message || 'Si è verificato un errore.', 'error');
                             }

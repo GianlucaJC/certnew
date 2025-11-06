@@ -94,6 +94,7 @@ class MasterSyncController extends Controller
     {
         try {
             $pendingFiles = tbl_master::where('id_doc', 'LIKE', 'local_file_%')
+                                      ->where('obsoleti', '<>', 3) // Escludi i file marcati come esclusi
                                       ->pluck('real_name')
                                       ->map(function ($name) {
                                           // Aggiunge l'estensione .doc per coerenza con l'output della sincronizzazione
@@ -197,7 +198,14 @@ class MasterSyncController extends Controller
             }
 
             // Usa il campo 'obsoleti' con valore 3 per marcare come escluso
-            tbl_master::whereIn('real_name', $filenames)->update(['obsoleti' => 3]);
+            // Rimuovo l'estensione dai nomi dei file prima di cercare nel DB
+            $realNames = array_map(function ($filename) {
+                return pathinfo($filename, PATHINFO_FILENAME);
+            }, $filenames);
+
+            tbl_master::whereIn('real_name', $realNames)
+                      ->where('id_doc', 'like', 'local_file_%')
+                      ->update(['obsoleti' => 3]);
 
             return response()->json(['success' => true, 'message' => 'File esclusi con successo.']);
         } catch (\Exception $e) {
