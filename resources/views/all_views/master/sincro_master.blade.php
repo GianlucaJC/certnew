@@ -67,6 +67,9 @@
                         <div class="mt-3">
                             <a href="javascript:void(0)" id="manageExclusionsLink">Gestisci Esclusioni</a>
                         </div>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-secondary btn-sm" id="helpButton"><i class="fas fa-question-circle"></i> Aiuto</button>
+                        </div>
 
                         <div class="progress-container mt-3 d-none" id="syncProgressBarContainer">
                             <div class="progress">
@@ -132,6 +135,45 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Chiudi</button>
                     <button type="button" class="btn btn-primary" id="restoreFilesBtn">Ripristina Selezionati</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal di Aiuto -->
+    <div class="modal fade" id="helpModal" tabindex="-1" role="dialog" aria-labelledby="helpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="helpModalLabel">Guida alla Sincronizzazione Master</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h6>1. Caricamento Master da PC (Passo 1)</h6>
+                    <p>Questa funzione ti permette di caricare manualmente i file <code>.doc</code> o <code>.docx</code> dal tuo computer direttamente nella cartella <code>public/doc/master</code> del server. È utile per aggiungere nuovi master o aggiornare versioni locali prima della sincronizzazione.</p>
+                    <p><strong>Nota:</strong> I file caricati qui non vengono automaticamente aggiunti al database o a Google Drive. Per questo, devi procedere con il "Passo 2".</p>
+
+                    <h6>2. Avvia Sincronizzazione (Passo 2)</h6>
+                    <p>Cliccando su "Avvia Sincronizzazione", il sistema esegue una scansione della cartella <code>public/doc/master</code>. Vengono identificati i file locali che non sono ancora presenti nella tabella <code>tbl_master</code> del database (né come master di Google Drive, né come file locali già sincronizzati).</p>
+                    <ul>
+                        <li>I nuovi file locali vengono aggiunti a <code>tbl_master</code> con un <code>id_doc</code> temporaneo (es. <code>local_file_NOMEFILE</code>).</li>
+                        <li><strong>Importante:</strong> I file già presenti nel database (sia da Google Drive che come file locali già sincronizzati) <strong>non vengono sovrascritti o duplicati</strong>. La sincronizzazione aggiunge solo nuovi master locali.</li>
+                        <li>Al termine, la lista "File Aggiunti" mostrerà i master locali pronti per essere caricati su Google Drive.</li>
+                    </ul>
+
+                    <h6>3. Crea Master in Drive di Google</h6>
+                    <p>Questo pulsante appare dopo la sincronizzazione se ci sono "File Aggiunti". Selezionando uno o più file dalla lista e cliccando qui, i file locali vengono caricati su Google Drive. Ogni file viene convertito in un documento Google Docs e il suo <code>id_doc</code> in <code>tbl_master</code> viene aggiornato con l'ID univoco di Google Drive.</p>
+
+                    <h6>4. Escludi Selezionati</h6>
+                    <p>Selezionando i file dalla lista "File Aggiunti" e cliccando su questo pulsante, i master locali vengono marcati come "esclusi" nel database (<code>obsoleti = 3</code>). Questo impedisce che vengano caricati su Google Drive. I file esclusi non appariranno più nella lista dei "File Aggiunti".</p>
+
+                    <h6>5. Gestisci Esclusioni</h6>
+                    <p>Questo link apre una finestra dove puoi visualizzare tutti i master che sono stati esclusi. Da qui, puoi selezionare i file e cliccare su "Ripristina Selezionati" per rimuovere il loro stato di esclusione, rendendoli nuovamente disponibili per la sincronizzazione e l'upload.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Chiudi</button>
                 </div>
             </div>
         </div>
@@ -525,6 +567,10 @@
                     isLocalUploadCancelled = true;
                     $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Annullamento...');
                 }
+            });
+
+            $('#helpButton').on('click', function() {
+                $('#helpModal').modal('show');
             });
 
         });
