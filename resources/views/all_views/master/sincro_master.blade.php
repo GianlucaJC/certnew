@@ -45,6 +45,9 @@
                         <button type="button" class="btn btn-info" id="uploadLocalFilesBtn">
                             <i class="fas fa-upload"></i> Carica Master da PC
                         </button>
+                        <button type="button" class="btn btn-danger d-none" id="cancelUploadLocalBtn">
+                            <i class="fas fa-times-circle"></i> Annulla Caricamento
+                        </button>
                         <input type="file" id="localMasterFiles" multiple style="display: none;" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
                         <hr>
                         <p><b>Passo 2:</b> Scansiona la cartella <code>public/doc/master</code> per aggiungere i nuovi file al database.</p>
@@ -117,6 +120,7 @@
             let isCancelled = false;
             let filesToUpload = [];
             let isUploadingLocal = false;
+            let isLocalUploadCancelled = false;
 
             $('#startSyncBtn').on('click', function() {
                 if (isSyncing) return;
@@ -272,6 +276,7 @@
 
             async function startLocalUpload(files) {
                 isUploadingLocal = true;
+                isLocalUploadCancelled = false;
                 $('#uploadLocalFilesBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Caricamento...');
                 $('#localUploadProgressBarContainer').removeClass('d-none');
                 $('#localUploadProgressBar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
@@ -282,7 +287,13 @@
                 const uploadUrl = "{{ route('sincro_master.upload_local') }}";
                 const csrfToken = $('meta[name="csrf-token"]').attr('content');
 
+                $('#cancelUploadLocalBtn').removeClass('d-none');
+
                 for (const file of files) {
+                    if (isLocalUploadCancelled) {
+                        break; // Esce dal ciclo se il caricamento è stato annullato
+                    }
+
                     const formData = new FormData();
                     formData.append('file', file);
 
@@ -311,6 +322,7 @@
                         $('#localUploadProgressBar').addClass('bg-danger');
                         isUploadingLocal = false;
                         $('#uploadLocalFilesBtn').prop('disabled', false).html('<i class="fas fa-upload"></i> Carica Master da PC');
+                        $('#cancelUploadLocalBtn').addClass('d-none');
                         // Pulisce l'input file per permettere di riselezionare gli stessi file
                         $('#localMasterFiles').val('');
                         return; // Interrompe il ciclo
@@ -318,16 +330,30 @@
                 }
 
                 isUploadingLocal = false;
+                $('#cancelUploadLocalBtn').addClass('d-none');
                 $('#uploadLocalFilesBtn').prop('disabled', false).html('<i class="fas fa-upload"></i> Carica Master da PC');
-                $('#localUploadStatusText').text('Caricamento dal PC completato con successo! Ora puoi avviare la sincronizzazione.');
                 $('#localMasterFiles').val(''); // Pulisce l'input
 
-                Swal.fire({
-                    title: 'Completato!',
-                    text: `Tutti i ${totalFiles} file sono stati caricati sul server. Ora puoi procedere con la sincronizzazione per registrarli nel database.`,
-                    icon: 'success'
-                });
+                if (isLocalUploadCancelled) {
+                    $('#localUploadStatusText').text(`Caricamento annullato dall'utente. ${processedCount} su ${totalFiles} file sono stati caricati.`);
+                    $('#localUploadProgressBar').addClass('bg-warning');
+                } else {
+                    $('#localUploadStatusText').text('Caricamento dal PC completato con successo! Ora puoi avviare la sincronizzazione.');
+                    Swal.fire({
+                        title: 'Completato!',
+                        text: `Tutti i ${totalFiles} file sono stati caricati sul server. Ora puoi procedere con la sincronizzazione per registrarli nel database.`,
+                        icon: 'success'
+                    });
+                }
             }
+
+            $('#cancelUploadLocalBtn').on('click', function() {
+                if (isUploadingLocal) {
+                    isLocalUploadCancelled = true;
+                    $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Annullamento...');
+                }
+            });
+
         });
     </script>
 @endsection
