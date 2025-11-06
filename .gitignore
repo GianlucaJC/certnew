@@ -19,6 +19,9 @@ credentials.json
 /public/credentials.json
 /public/doc/definitivi_idonei/*
 /public/doc/definitivi_non_idonei/*
+/public/doc/master/*
+/public/doc/master_old/*
+/public/doc/leggi_master.txt
 /config/filesystems.php
 /database/migrations/old/*
 /.fleet

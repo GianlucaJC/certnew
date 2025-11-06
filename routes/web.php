@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GuidaController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MasterSyncController;
 
 /*
 |--------------------------------------------------------------------------
@@ -90,6 +91,11 @@ Route::middleware('auth')->group(function () {
     //per aggiornare tutti i riferimenti dei master nella tabella locale (tbl_master)
     Route::get('list_update', [ 'as' => 'list_update', 'uses' => 'App\Http\Controllers\MainController@list_update']);
     
+    Route::get('sincro-master', [MasterSyncController::class, 'index'])->name('sincro_master');
+    Route::post('sincro-master/sync', [MasterSyncController::class, 'sync'])->name('sincro_master.sync');
+    Route::post('sincro-master/upload-to-drive', [MasterSyncController::class, 'uploadToDrive'])->name('sincro_master.upload');
+    Route::post('sincro-master/upload-local', [MasterSyncController::class, 'uploadLocal'])->name('sincro_master.upload_local');
+
     // Rotta per il refresh del token CSRF
     Route::get('/refresh-csrf', function () {
         return response()->json(['token' => csrf_token()]);

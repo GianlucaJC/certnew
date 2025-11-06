@@ -61,6 +61,13 @@ $isMainMenuActive = in_array($currentRoute, [
 				  </li>
 				  <hr>
 				@endif
+				  <li class="nav-item">
+					<a href="{{ route('sincro_master') }}" class="nav-link {{ request()->routeIs('sincro_master') ? 'active' : '' }}">
+					  <i class="fas fa-sync-alt nav-icon"></i>
+					  <p>Check Master</p>
+					</a>
+				  </li>
+				  <hr>
 
 				  <li class="nav-item">
 					<a href="{{route('elenco_master')}}" class="nav-link {{ request()->routeIs('elenco_master') ? 'active' : '' }}">
