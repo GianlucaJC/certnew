@@ -72,7 +72,13 @@ $(document).ready( function () {
                         buttons += `<button type="button" class="btn btn-warning btn-sm btnall">Vedi Obsoleti</button> `;
                     }
                     buttons += `<button type="button" class="btn btn-danger btn-sm btnall" onclick='dele_master(${row.id})'>Elimina</button>`;
+                    buttons += `
+                        <button class="btn btn-warning btn-sm archive-btn ml-1" data-id="${row.id_doc}" title="Archivia Master">
+                            <i class="fas fa-archive"></i>
+                        </button>`;
                     buttons += `</div>`;
+
+
                     return buttons;
                 }
             },
@@ -172,6 +178,39 @@ $(document).ready( function () {
     });
     // Memorizza l'istanza di DataTable globalmente se necessaria per altre funzioni
     window.masterDataTable = table;
+
+    // Logica per il pulsante Archivia
+    $('#tbl_articoli').on('click', '.archive-btn', function(e) {
+        e.preventDefault();
+        var id_doc = $(this).data('id');
+        
+        if (confirm('Sei sicuro di voler archiviare questo master? L\'operazione non potrà essere annullata da questa interfaccia.')) {
+        const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
+        const baseUrl = $('meta[name="base-url"]').attr('content');
+        const csrf = metaElements.length > 0 ? metaElements[0].content : "";
+            $.ajax({
+                url: `${baseUrl}/archive-master`,
+                type: 'POST',
+                data: {
+                    _token: csrf,
+                    id_doc: id_doc
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.message);
+                        // Ricarica la tabella per rimuovere la riga archiviata
+                        window.masterDataTable.ajax.reload(null, false); 
+                    } else {
+                        alert('Errore: ' + response.message);
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    alert('Si è verificato un errore durante la richiesta al server.');
+                }
+            });
+        }
+    });
 
     // Funzione per resettare tutti i filtri
     function resetAllFilters() {

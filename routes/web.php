@@ -39,6 +39,8 @@ Route::middleware('auth')->group(function () {
 	Route::get('elenco_master', [ 'as' => 'elenco_master', 'uses' => 'App\Http\Controllers\ControllerMaster@elenco_master']);
 	Route::post('elenco_master', [ 'as' => 'elenco_master', 'uses' => 'App\Http\Controllers\ControllerMaster@elenco_master']);
     
+    Route::post('archive-master', [ 'as' => 'archive.master', 'uses' => 'App\Http\Controllers\ControllerMaster@archive_master']);
+        
     Route::post('dele_master', [ 'as' => 'dele_master', 'uses' => 'App\Http\Controllers\ControllerMaster@dele_master']);
     Route::post('save_master', [ 'as' => 'save_master', 'uses' => 'App\Http\Controllers\ControllerMaster@save_master']);
 

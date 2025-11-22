@@ -563,5 +563,39 @@ class ControllerMaster extends Controller
         }
     }
 
+    public function archive_master(Request $request)
+    {
+        try {
+            $id_doc = $request->input('id_doc');
+            if (!$id_doc) {
+                return response()->json(['success' => false, 'message' => 'ID documento non fornito.'], 400);
+            }
+
+            $master = tbl_master::where('id_doc', $id_doc)->first();
+            if (!$master) {
+                return response()->json(['success' => false, 'message' => 'Master non trovato.'], 404);
+            }
+
+            /*
+            $client = new \Google_Client();
+            $client->setClientId(env('GOOGLE_DRIVE_CLIENT_ID'));
+            $client->setClientSecret(env('GOOGLE_DRIVE_CLIENT_SECRET'));
+            $client->refreshToken(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+            $service = new \Google_Service_Drive($client);
+
+            $newName = $master->real_name . "_obs";
+            $file = new \Google_Service_Drive_DriveFile(['name' => $newName]);
+            $service->files->update($id_doc, $file, ['fields' => 'id, name']);
+            */
+
+            $master->obsoleti = 1;
+            $master->save();
+
+            return response()->json(['success' => true, 'message' => 'Master archiviato con successo.']);
+        } catch (\Exception $e) {
+            \Log::error("Errore in archive_master: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Errore del server durante l\'archiviazione.'], 500);
+        }
+    }
 
 }	
