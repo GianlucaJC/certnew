@@ -197,7 +197,7 @@ $(document).ready( function () {
                 },
                 success: function(response) {
                     if (response.success) {
-                        alert(response.message);
+                        
                         // Ricarica la tabella per rimuovere la riga archiviata
                         window.masterDataTable.ajax.reload(null, false); 
                     } else {

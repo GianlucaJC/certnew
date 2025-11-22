@@ -244,6 +244,6 @@ use Illuminate\Support\Facades\Storage;
 	
 	
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.121"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.122"></script>
 
 @endsection
