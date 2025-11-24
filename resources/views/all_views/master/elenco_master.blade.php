@@ -62,14 +62,29 @@ use Illuminate\Support\Facades\Storage;
               <div class="card-header">
                 <h5 class="card-title">Operazioni Master</h5>
               </div>
-              <div class="card-body d-flex flex-wrap align-items-center">
-                <button type="button" class="btn btn-primary btn-sm m-1" onclick='edit_rev(0)'><i class="fas fa-plus-circle"></i> Nuovo Master</button>
-                <button type="button" class="btn btn-info btn-sm m-1" id="btn_verifica_tag_master" onclick="showTagSelectionModal()"><i class="fas fa-tags"></i> Verifica TAG</button>
-                <button type="button" class="btn btn-secondary btn-sm m-1" id="filtra_mai_scansionati"><i class="fas fa-eye-slash"></i> Solo mai scansionati</button>
-                <button type="button" class="btn btn-warning btn-sm m-1" id="filtra_tag_mancanti"><i class="fas fa-exclamation-triangle"></i> Filtra tag essenziali non rilevati</button>
-                <button type="button" class="btn btn-outline-success btn-sm m-1" id="filtra_sistemati"><i class="fas fa-check"></i> Solo Sistemati</button>
-                <button type="button" class="btn btn-outline-danger btn-sm m-1" id="filtra_non_sistemati"><i class="fas fa-times"></i> Solo Non Sistemati</button>
-                <button type="button" class="btn btn-default btn-sm m-1" id="reset_filtri"><i class="fas fa-undo"></i> Reset Filtri</button>
+              <div class="card-body d-flex flex-wrap align-items-start">
+                <div>
+                  <button type="button" class="btn btn-primary btn-sm m-1" onclick='edit_rev(0)'><i class="fas fa-plus-circle"></i> Nuovo Master</button>
+                  <button type="button" class="btn btn-info btn-sm m-1" id="btn_verifica_tag_master" onclick="showTagSelectionModal()"><i class="fas fa-tags"></i> Verifica TAG</button>
+                  <button type="button" class="btn btn-secondary btn-sm m-1" id="filtra_mai_scansionati"><i class="fas fa-eye-slash"></i> Solo mai scansionati</button>
+                  <button type="button" class="btn btn-warning btn-sm m-1" id="filtra_tag_mancanti"><i class="fas fa-exclamation-triangle"></i> Filtra tag essenziali non rilevati</button>
+                  <button type="button" class="btn btn-outline-success btn-sm m-1" id="filtra_sistemati"><i class="fas fa-check"></i> Solo Sistemati</button>
+                  <button type="button" class="btn btn-outline-danger btn-sm m-1" id="filtra_non_sistemati"><i class="fas fa-times"></i> Solo Non Sistemati</button>
+                  <button type="button" class="btn btn-default btn-sm m-1" id="reset_filtri"><i class="fas fa-undo"></i> Reset Filtri</button>
+                </div>
+                <div class="btn-group ml-auto">
+                  <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-archive"></i> Filtra per Archivio: <span id="current-archivio-filter">Attivi</span>
+                  </button>
+                  <div class="dropdown-menu dropdown-menu-right" id="archivio-filter-menu">
+                    <a class="dropdown-item archivio-filter" href="#" data-archivio="attivo">Attivi</a>
+                    <a class="dropdown-item archivio-filter" href="#" data-archivio="obsoleto">Obsoleti</a>
+                    <a class="dropdown-item archivio-filter" href="#" data-archivio="confermato">Confermati</a>
+                    <a class="dropdown-item archivio-filter" href="#" data-archivio="eliminati">Eliminati</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item archivio-filter" href="#" data-archivio="all">Tutti</a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -84,6 +99,7 @@ use Illuminate\Support\Facades\Storage;
                         <th>Rev</th>
                         <th>Data Creazione</th>
                         <th style='max-width:200px'>Tag Rilevati</th>
+                        <th>Archivio</th>
                         <th>Stato</th>
                       </tr>
                     </thead>
@@ -97,6 +113,7 @@ use Illuminate\Support\Facades\Storage;
                         <th>Rev</th>
                         <th>Data Creazione</th>
                         <th>Tag Rilevati</th>
+                        <th></th>
                         <th></th>
                       </tr>
                     </tfoot>
@@ -244,6 +261,6 @@ use Illuminate\Support\Facades\Storage;
 	
 	
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=1.122"></script>
+	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=<?php echo time();?>"></script>
 
 @endsection

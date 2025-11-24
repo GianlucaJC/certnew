@@ -1,4 +1,4 @@
-let customFilter = '', custom_filter_sistemato = null, verificationController;
+let customFilter = '', custom_filter_sistemato = null, custom_filter_archivio = 'attivo';
 
 $(document).ready( function () {
     $('#tbl_articoli tfoot th').each(function () {
@@ -16,7 +16,7 @@ $(document).ready( function () {
         "processing": true,
         "serverSide": true,
         "ajax": {
-            "url": "elenco_master",
+            "url": "elenco_master", // Questa dovrebbe puntare alla route che restituisce i dati JSON
             "type": "POST",
             "headers": {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -27,6 +27,7 @@ $(document).ready( function () {
                     d.custom_filter = customFilter;
                 }
                 d.custom_filter_sistemato = custom_filter_sistemato;
+                d.custom_filter_archivio = custom_filter_archivio;
             },
             "error": function (jqXHR, textStatus, errorThrown) {
                 // Intercetta l'errore AJAX di DataTables per evitare l'alert di default.
@@ -35,13 +36,14 @@ $(document).ready( function () {
             }
         },
         "columns": [
-            { "data": "id", "name": "id", "orderable": false, "searchable": false }, // Colonna Azioni
-            { "data": "real_name", "name": "m.real_name" },
-            { "data": "rev", "name": "m.rev" },
-            { "data": "created_at", "name": "m.created_at", "searchable": false }, // Ricerca disabilitata qui, gestita da Rev
-            { "data": "tags_found", "name": "m.tags_found", "orderable": false, "searchable": true }, // Abilitata la ricerca per i tag
+            { "data": "operazioni", "name": null, "orderable": false, "searchable": false },
+            { "data": "real_name", "name": "m.real_name" }, // Assumendo che il controller lo gestisca
+            { "data": "rev", "name": "m.rev" }, // Assumendo che il controller lo gestisca
+            { "data": "created_at", "name": "m.created_at", "searchable": false },
+            { "data": "tags_found", "name": "m.tags_found", "orderable": false, "searchable": true },
+            { "data": "archivio_descr", "name": null, "orderable": false, "searchable": false }, // Colonna virtuale
             { 
-                "data": "sistemato", 
+                "data": "sistemato",
                 "name": "m.sistemato", 
                 "orderable": true, 
                 "searchable": false,
@@ -53,43 +55,59 @@ $(document).ready( function () {
                         return `<button class="btn btn-outline-success btn-sm" onclick="toggleSistemato('${row.id_doc}', this, '${baseUrl}')">Segna come sistemato</button>`;
                     }
                 }
-            },
-            { "data": "data_rev", "name": "m.data_rev", "visible": false, "searchable": false },
-            { "data": "id_doc", "name": "m.id_doc", "visible": false, "searchable": false },
-            { "data": "last_scan", "name": "m.last_scan", "visible": false, "searchable": false }
+            }
         ],
         "columnDefs": [
             {
                 "targets": 0,
                 "render": function (data, type, row, meta) {
-                    let buttons = `<div id='div_oper${row.id}'>`;
-                    if (row.id_clone_from == null) {
-                        buttons += `<button type="button" class="btn btn-secondary btn-sm btnall" id='btn_dup${row.id}' onclick="duplica_master('${row.id_doc}',${row.id})">Duplica</button> `;
+                    let buttons = `<div id='div_oper${row.id}' class="btn-group" role="group" aria-label="Azioni Master">`;
+                    
+                    if (row.dele == 1) {
+                        // Se il master è eliminato, mostra solo il pulsante di ripristino
+                        buttons += `<button type="button" class="btn btn-success btn-sm" onclick='restore_master(${row.id})' title="Ripristina Master"><i class="fas fa-undo"></i></button>`;
                     } else {
-                        buttons += `<button type="button" class="btn btn-primary btn-sm btnall" id='btn_change${row.id}' onclick="change_master('${row.id_doc}','${row.id_clone_from}',${row.id})">Change Master</button> `;
+                        // Pulsanti standard per master non eliminati
+                        if (row.id_clone_from == null) {
+                            buttons += `<button type="button" class="btn btn-secondary btn-sm btnall" id='btn_dup${row.id}' onclick="duplica_master('${row.id_doc}',${row.id})" title="Duplica Master"><i class="fas fa-clone"></i></button>`;
+                        } else {
+                            buttons += `<button type="button" class="btn btn-primary btn-sm btnall" id='btn_change${row.id}' onclick="change_master('${row.id_doc}','${row.id_clone_from}',${row.id})" title="Rendi questo clone il master ufficiale"><i class="fas fa-exchange-alt"></i></button>`;
+                        }
+                        buttons += `<button type="button" class="btn btn-danger btn-sm btnall" onclick='dele_master(${row.id})' title="Elimina Master"><i class="fas fa-trash-alt"></i></button>`;
+
+                        // Menu a tendina "Sposta in" dinamico
+                        let dropdownItems = '';
+                        if (custom_filter_archivio !== 'attivo') {
+                            dropdownItems += `<a class="dropdown-item move-btn" href="#" data-id="${row.id_doc}" data-archivio="attivo">Attivi</a>`;
+                        }
+                        if (custom_filter_archivio !== 'confermato') {
+                            dropdownItems += `<a class="dropdown-item move-btn" href="#" data-id="${row.id_doc}" data-archivio="confermato">Confermati</a>`;
+                        }
+                        if (custom_filter_archivio !== 'obsoleto') {
+                            dropdownItems += `<a class="dropdown-item move-btn" href="#" data-id="${row.id_doc}" data-archivio="obsoleto">Obsoleti</a>`;
+                        }
+
+                        buttons += `<div class="btn-group" role="group">
+                                      <button type="button" class="btn btn-info btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Sposta in...">
+                                        <i class="fas fa-folder-open"></i>
+                                      </button>
+                                      <div class="dropdown-menu">${dropdownItems}</div>
+                                    </div>`;
                     }
-                    if (row.obsoleti == "2") {
-                        buttons += `<button type="button" class="btn btn-warning btn-sm btnall">Vedi Obsoleti</button> `;
-                    }
-                    buttons += `<button type="button" class="btn btn-danger btn-sm btnall" onclick='dele_master(${row.id})'>Elimina</button>`;
-                    buttons += `
-                        <button class="btn btn-warning btn-sm archive-btn ml-1" data-id="${row.id_doc}" title="Archivia Master">
-                            <i class="fas fa-archive"></i>
-                        </button>`;
+
                     buttons += `</div>`;
-
-
                     return buttons;
                 }
             },
             {
                 "targets": 1,
                 "render": function (data, type, row, meta) {
-                    return `<div id='name_m${row.id}'>
-                                <a target='blank' href='https://docs.google.com/document/d/${row.id_doc}/edit?usp=embed_googleplus'>
-                                  <span id='name_mod${row.id}'>${row.real_name}</span>
-                                </a>
-                            </div>`;
+                    let link = (row.dele == 1) ? 
+                        `<span id='name_mod${row.id}'>${row.real_name}</span>` :
+                        `<a target='blank' href='https://docs.google.com/document/d/${row.id_doc}/edit?usp=embed_googleplus'>
+                           <span id='name_mod${row.id}'>${row.real_name}</span>
+                         </a>`;
+                    return `<div id='name_m${row.id}'>${link}</div>`;
                 }
             },
             {
@@ -107,7 +125,8 @@ $(document).ready( function () {
                                 data-rev='${row.rev || ''}'
                                 data-data_rev='${row.data_rev || ''}'>
                             </span>
-                            <a href='#' onclick="edit_rev(${row.id})">${rev_text}</a>`;
+                            ${row.dele == 1 ? rev_text : `<a href='#' onclick="edit_rev(${row.id})">${rev_text}</a>`}
+                            `;
                 }
             },
             {
@@ -154,6 +173,12 @@ $(document).ready( function () {
                 }
             }
         ],
+        "rowCallback": function(row, data, index) {
+            // Aggiunge una classe per evidenziare le righe eliminate
+            if (data.dele == 1) {
+                $(row).addClass('bg-danger-light');
+            }
+        },
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Italian.json"
         },
@@ -179,37 +204,53 @@ $(document).ready( function () {
     // Memorizza l'istanza di DataTable globalmente se necessaria per altre funzioni
     window.masterDataTable = table;
 
-    // Logica per il pulsante Archivia
-    $('#tbl_articoli').on('click', '.archive-btn', function(e) {
+    // Logica per il menu a tendina "Sposta in..."
+    $('#tbl_articoli').on('click', '.move-btn', function(e) {
         e.preventDefault();
-        var id_doc = $(this).data('id');
-        
-        if (confirm('Sei sicuro di voler archiviare questo master? L\'operazione non potrà essere annullata da questa interfaccia.')) {
-        const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
-        const baseUrl = $('meta[name="base-url"]').attr('content');
-        const csrf = metaElements.length > 0 ? metaElements[0].content : "";
-            $.ajax({
-                url: `${baseUrl}/archive-master`,
-                type: 'POST',
-                data: {
-                    _token: csrf,
-                    id_doc: id_doc
-                },
-                success: function(response) {
-                    if (response.success) {
-                        
-                        // Ricarica la tabella per rimuovere la riga archiviata
-                        window.masterDataTable.ajax.reload(null, false); 
-                    } else {
-                        alert('Errore: ' + response.message);
+        const id_doc = $(this).data('id');
+        let target_archivio = $(this).data('archivio');
+        const target_text = $(this).text();
+
+        Swal.fire({
+            title: 'Sei sicuro?',
+            text: `Vuoi spostare questo master in "${target_text}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì, sposta!',
+            cancelButtonText: 'Annulla'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
+                const baseUrl = $('meta[name="base-url"]').attr('content');
+                const csrf = metaElements.length > 0 ? metaElements[0].content : "";
+
+                $.ajax({
+                    url: `${baseUrl}/move-master`, // Nuovo endpoint
+                    type: 'POST',
+                    data: {
+                        _token: csrf,
+                        id_doc: id_doc,
+                        target_archivio: target_archivio // Nuovo parametro
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire('Spostato!', response.message, 'success');
+                            // Ricarica la tabella per rimuovere la riga
+                            window.masterDataTable.ajax.reload(null, false);
+                        } else {
+                            Swal.fire('Errore!', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Si è verificato un errore durante la richiesta al server.';
+                        console.error(xhr);
+                        Swal.fire('Errore!', errorMsg, 'error');
                     }
-                },
-                error: function(xhr) {
-                    console.error(xhr.responseText);
-                    alert('Si è verificato un errore durante la richiesta al server.');
-                }
-            });
-        }
+                });
+            }
+        });
     });
 
     // Funzione per resettare tutti i filtri
@@ -223,6 +264,7 @@ $(document).ready( function () {
         // Resetta il filtro custom e ridisegna la tabella
         customFilter = '';
         custom_filter_sistemato = null;
+        // Non resetto il filtro archivio, quello si resetta solo scegliendo 'attivo'
     }
 
     // Evento per il pulsante "Solo mai scansionati"
@@ -285,23 +327,85 @@ $(document).ready( function () {
         table.draw(); // Ricarica la tabella senza filtri custom
     });
 
+    // Logica per il nuovo filtro "Archivio"
+    $('#archivio-filter-menu').on('click', '.archivio-filter', function(e) {
+        e.preventDefault();
+        const newFilter = $(this).data('archivio');
+        const newFilterText = $(this).text();
+
+        custom_filter_archivio = newFilter;
+        $('#current-archivio-filter').text(newFilterText);
+        table.draw();
+    });
+
 
 
 } );
 
 
-function dele_element(value) {
-	if(!confirm('Sicuri di eliminare l\'elemento?')) 
-		event.preventDefault() 
-	else 
-		$('#dele_contr').val(value)	
+function dele_master(id_ref) {
+    Swal.fire({
+        title: 'Sei sicuro?',
+        text: "Il master verrà spostato nel cestino!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Sì, elimina!',
+        cancelButtonText: 'Annulla'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $('#dele_contr').val(id_ref);
+            $('#frm_articolo').attr('action', 'dele_master').submit();
+        }
+    });
 }
 
-function restore_element(value) {
-	if(!confirm('Sicuri di ripristinare l\'elemento?')) 
-		event.preventDefault() 
-	else 
-		$('#restore_contr').val(value)	
+function restore_master(id_ref) {
+    Swal.fire({
+        title: 'Sei sicuro?',
+        text: "Il master verrà ripristinato.",
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sì, ripristina!',
+        cancelButtonText: 'Annulla'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
+            const csrf = metaElements.length > 0 ? metaElements[0].content : "";
+            const baseUrl = $('meta[name="base-url"]').attr('content');
+
+            fetch(`${baseUrl}/restore_master`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-CSRF-TOKEN': csrf
+                },
+                body: `id_ref=${id_ref}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Errore di rete o del server.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Ripristinato!', data.message, 'success');
+                    // Ricarica la tabella per rimuovere la riga ripristinata dalla vista corrente
+                    window.masterDataTable.ajax.reload(null, false);
+                } else {
+                    Swal.fire('Errore!', data.message || 'Impossibile ripristinare il master.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Errore nella chiamata fetch:', error);
+                Swal.fire('Errore!', 'Si è verificato un problema di comunicazione con il server.', 'error');
+            });
+        }
+    });
 }
 
 function save_master(id_ref) {
@@ -309,7 +413,7 @@ function save_master(id_ref) {
 	rev_edit=$("#rev_edit").val();
 	data_rev_edit=$("#data_rev_edit").val();
 	if (name_master_edit.length==0) {
-		alert("Controllare il nome assegnato!")
+		Swal.fire("Attenzione", "Controllare il nome assegnato!", "warning");
 		return false
 	}
 	if (id_ref!=0) {
@@ -359,7 +463,7 @@ function save_master(id_ref) {
 				window.location.reload();
 		}	
 		else
-			alert("Problema riscontrato durante la modifica")
+			Swal.fire("Errore", "Problema riscontrato durante la modifica", "error");
     })
     .catch(status, err => {
         return console.log(status, err);
@@ -392,112 +496,110 @@ function load_rev(id_ref) {
 }
 
 
-function dele_master(id_ref) {
-	if (!confirm("Sicuri di eliminare il Master?")) return false
-		
-    const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
-    const csrf = metaElements.length > 0 ? metaElements[0].content : "";
+function change_master(id_doc, id_clone_from, id_ref) {
+    Swal.fire({
+        title: 'Sei sicuro?',
+        text: "Vuoi rendere il clone master ufficiale?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sì, procedi!',
+        cancelButtonText: 'Annulla'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $("#btn_change" + id_ref).text('Attendere...');
+            $(".btnall").attr('disabled', true);
 
-    fetch("dele_master", {
-        method: 'post',
-        headers: {
-          "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "X-CSRF-Token": csrf
-        },
-        body: "id_ref="+id_ref,
-    })
-    .then(response => {
-        if (response.ok) {
-           return response.json();
+            const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
+            const csrf = metaElements.length > 0 ? metaElements[0].content : "";
+
+            fetch("change_master", {
+                    method: 'post',
+                    headers: {
+                        "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "X-CSRF-Token": csrf
+                    },
+                    body: "id_doc=" + id_doc + "&id_clone_from=" + id_clone_from,
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                })
+                .then(resp => {
+                    if (resp.header == "OK") {
+                        Swal.fire('Successo!', 'Master associato!', 'success').then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire('Errore!', 'Problema riscontrato durante l\'operazione.', 'error');
+                        $(".btnall").attr('disabled', false);
+                        $("#btn_change" + id_ref).text('Change Master');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire('Errore!', 'Si è verificato un errore di comunicazione.', 'error');
+                    $(".btnall").attr('disabled', false);
+                    $("#btn_change" + id_ref).text('Change Master');
+                });
         }
-    })
-    .then(resp=>{
-		if (resp.header=="OK") {
-			html="<del>"+name_master+"</del>"
-			$("#name_m"+id_ref).html(html)
-			$("#div_oper"+id_ref).empty()
-			alert("Master eliminato")
-		}	
-		else
-			alert("Problema riscontrato durante la cancellazione")
-    })
-    .catch(status, err => {
-        return console.log(status, err);
-    })   
+    });
 }
 
-function change_master(id_doc,id_clone_from,id_ref) {
-	if (!confirm("Sicuri di rendere il clone master ufficiale?")) return false
-    $("#btn_change"+id_ref).text('Attendere...');
-    $(".btnall").attr('disabled', true);
+function duplica_master(id_doc, id_ref) {
+    Swal.fire({
+        title: 'Sei sicuro?',
+        text: "Vuoi duplicare il master?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sì, duplica!',
+        cancelButtonText: 'Annulla'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const name_master = $("#info_master" + id_ref).attr('data-name_master');
+            const name_clone = name_master + "-copia";
+            $("#btn_dup" + id_ref).text('Attendere...');
+            $(".btnall").attr('disabled', true);
 
-	const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
-    const csrf = metaElements.length > 0 ? metaElements[0].content : "";
+            const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
+            const csrf = metaElements.length > 0 ? metaElements[0].content : "";
 
-    fetch("change_master", {
-        method: 'post',
-        headers: {
-          "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "X-CSRF-Token": csrf
-        },
-        body: "id_doc="+id_doc+"&id_clone_from="+id_clone_from,
-    })
-    .then(response => {
-        if (response.ok) {
-           return response.json();
+            fetch("duplica_master", {
+                    method: 'post',
+                    headers: {
+                        "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "X-CSRF-Token": csrf
+                    },
+                    body: "id_doc=" + id_doc + "&name_clone=" + name_clone,
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                })
+                .then(resp => {
+                    if (resp.header == "OK") {
+                        Swal.fire('Duplicato!', 'Master duplicato con successo.', 'success').then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire('Errore!', 'Problema riscontrato durante la duplicazione.', 'error');
+                        $("#btn_dup" + id_ref).text('Duplica');
+                        $(".btnall").attr('disabled', false);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire('Errore!', 'Si è verificato un errore di comunicazione.', 'error');
+                    $("#btn_dup" + id_ref).text('Duplica');
+                    $(".btnall").attr('disabled', false);
+                });
         }
-    })
-    .then(resp=>{
-		if (resp.header=="OK") {
-           $("#tr"+id_ref).remove()
-            $(".btnall").attr('disabled', false);            
-			alert("Master associato!")
-            window.location.reload();
-		}	
-		else
-			alert("Problema riscontrato durante la cancellazione")
-    })
-    .catch(status, err => {
-        return console.log(status, err);
-    })  	
-}
-
-function duplica_master(id_doc,id_ref) {
-	if (!confirm("Sicuri di duplicare il master?")) return false
-	name_master=$("#info_master"+id_ref).attr('data-name_master');	
-	name_clone=name_master+"-copia";
-    $("#btn_dup"+id_ref).text('Attendere...');
-    $(".btnall").attr('disabled', true);
-
-	const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
-    const csrf = metaElements.length > 0 ? metaElements[0].content : "";
-
-    fetch("duplica_master", {
-        method: 'post',
-        headers: {
-          "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "X-CSRF-Token": csrf
-        },
-        body: "id_doc="+id_doc+"&name_clone="+name_clone,
-    })
-    .then(response => {
-        if (response.ok) {
-           return response.json();
-        }
-    })
-    .then(resp=>{
-		if (resp.header=="OK") {
-            $("#btn_dup"+id_ref).text('Duplica');
-            $(".btnall").attr('disabled', false);            
-			alert("Master duplicato.")
-            window.location.reload();
-		}	
-		else
-			alert("Problema riscontrato durante la cancellazione")
-    })
-    .catch(status, err => {
-        return console.log(status, err);
-    })  	
+    });
 }
 function edit_rev(id_ref) {
     name_master=$("#info_master"+id_ref).attr('data-name_master');
@@ -541,41 +643,6 @@ function edit_rev(id_ref) {
     
 }
 
-
-function dele_master(id_ref) {
-	if (!confirm("Sicuri di eliminare il Master?")) return false
-	name_master=$("#info_master"+id_ref).attr('data-name_master');
-    const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
-    const csrf = metaElements.length > 0 ? metaElements[0].content : "";
-
-    fetch("dele_master", {
-        method: 'post',
-        headers: {
-          "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "X-CSRF-Token": csrf
-        },
-        body: "id_ref="+id_ref,
-    })
-    .then(response => {
-        if (response.ok) {
-           return response.json();
-        }
-    })
-    .then(resp=>{
-		if (resp.header=="OK") {
-			html="<del>"+name_master+"</del>"
-			$("#name_m"+id_ref).html(html)
-			$("#div_oper"+id_ref).empty()
-			alert("Master eliminato")
-		}	
-		else
-			alert("Problema riscontrato durante la cancellazione")
-    })
-    .catch(status, err => {
-        return console.log(status, err);
-    })    
-
-}
 
 function toggleSistemato(id_doc, button, baseUrl) {
     const url = `${baseUrl}/toggle_sistemato`;
@@ -669,7 +736,7 @@ async function verificaTagMaster(mode) {
     // Aggiorna il token CSRF prima di procedere
     const newCsrfToken = await refreshCsrfToken();
     if (!newCsrfToken) {
-        alert("Errore di sessione. Impossibile avviare la verifica. Prova a ricaricare la pagina.");
+        Swal.fire("Errore di sessione", "Impossibile avviare la verifica. Prova a ricaricare la pagina.", "error");
         btn.attr('disabled', false);
         return;
     }
@@ -681,7 +748,7 @@ async function verificaTagMaster(mode) {
         // Solo le righe nella pagina corrente che corrispondono al filtro
         idsToVerify = window.masterDataTable.rows({ page: 'current', search: 'applied' }).data().map(row => row.id_doc).toArray();
         if (idsToVerify.length === 0) {
-            alert("Nessun master trovato nella pagina corrente per la verifica.");
+            Swal.fire("Attenzione", "Nessun master trovato nella pagina corrente per la verifica.", "warning");
             btn.attr('disabled', false);
             return;
         }
@@ -719,7 +786,7 @@ async function verificaTagMaster(mode) {
             const data = await response.json();
             if (data.success) {
                 if (data.ids.length === 0) {
-                    alert("Nessun master trovato con i filtri applicati per la verifica.");
+                    Swal.fire("Attenzione", "Nessun master trovato con i filtri applicati per la verifica.", "warning");
                     btn.attr('disabled', false);
                     return;
                 }
@@ -728,13 +795,13 @@ async function verificaTagMaster(mode) {
                 throw new Error(data.message || 'Impossibile recuperare gli ID dal server.');
             }
         } catch (error) {
-            alert(`Errore: ${error.message}`);
+            Swal.fire('Errore', error.message, 'error');
             btn.attr('disabled', false);
         }
     }
 
     if (idsToVerify.length === 0) {
-        alert("Nessun master trovato per la verifica.");
+        Swal.fire("Attenzione", "Nessun master trovato per la verifica.", "warning");
         btn.attr('disabled', false);
         return;
     }
@@ -814,9 +881,9 @@ async function processIds(idsToVerify, csrf) {
         btn.attr('disabled', false);
         
         if (isVerificationCancelled) {
-            alert(`Verifica interrotta. Sono stati processati ${processedCount} documenti su ${totalIds}.`);
+            Swal.fire('Interrotto', `Verifica interrotta. Sono stati processati ${processedCount} documenti su ${totalIds}.`, 'info');
         } else {
-            alert(`Verifica completata! Processati ${processedCount} documenti.`);
+            Swal.fire('Completato!', `Verifica completata! Processati ${processedCount} documenti.`, 'success');
         }
 
         // Ricarica la tabella per mostrare i risultati

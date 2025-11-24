@@ -185,7 +185,7 @@ class ControllerMaster extends Controller
                 $query = tbl_master::from('tbl_master as m')
                     ->select('m.id_doc') // Selezioniamo solo l'id_doc
                     ->where('m.dele', '=', 0)
-                    ->where('m.obsoleti', '<>', 1);
+                    ->where('m.archivio', '=', 'attivo');
 
                 // Applichiamo gli stessi filtri della tabella
 
@@ -248,16 +248,27 @@ class ControllerMaster extends Controller
         if ($request->ajax() || $request->has('draw')) {
             try {
                 $query = tbl_master::from('tbl_master as m')
-                    ->select('m.id', 'm.id_doc', 'm.id_clone_from', 'm.real_name', 'm.obsoleti', 'm.rev', 'm.data_rev', 'm.created_at', 'm.updated_at', 'm.last_scan', 'm.tags_found', 'm.sistemato')
-                    ->where('m.dele', '=', 0)
-                    ->where('m.obsoleti', '<>', 1);
+                    ->select('m.id', 'm.id_doc', 'm.id_clone_from', 'm.real_name', 'm.obsoleti', 'm.archivio', 'm.rev', 'm.data_rev', 'm.created_at', 'm.updated_at', 'm.last_scan', 'm.tags_found', 'm.sistemato', 'm.dele');
+
+                // Filtro per ARCHIVIO (Attivi, Obsoleti, Eliminati, ecc.)
+                $archivioFilter = $request->input('custom_filter_archivio', 'attivo');
+                if ($archivioFilter == 'eliminati') {
+                    // Se si cercano gli eliminati, si filtra solo per dele=1, ignorando 'archivio'
+                    $query->where('m.dele', 1);
+                } elseif ($archivioFilter !== 'all') {
+                    // Per tutti gli altri stati (attivo, obsoleto, confermato), si usa la colonna 'archivio'
+                    $query->where('m.dele', 0)->where('m.archivio', '=', $archivioFilter);
+                } else {
+                    // Se il filtro è 'all', non si applica nessun filtro su 'dele' o 'archivio'
+                    // Questo mostrerà tutto, inclusi gli eliminati.
+                }
 
                 // Filtro per 'sistemato'
                 $customFilterSistemato = $request->input('custom_filter_sistemato');
                 if ($customFilterSistemato === 'sistemati') {
-                    $query->where('m.sistemato', '=', 1);
+                    $query->where('m.sistemato', 1);
                 } elseif ($customFilterSistemato === 'non_sistemati') {
-                    $query->where('m.sistemato', '=', 0);
+                    $query->where('m.sistemato', 0);
                 }
 
                 // Conteggio totale record senza filtri (ma con le clausole where iniziali e tutte le select)
@@ -342,7 +353,10 @@ class ControllerMaster extends Controller
                     $orderDirection = $order['dir'];
                     $columnName = $request->input("columns.{$orderColumnIndex}.name"); // Questo dovrebbe essere il 'name' dalla configurazione delle colonne JS
                     if ($columnName) {
-                        $filteredQuery->orderBy($columnName, $orderDirection);
+                        // Aggiungo un controllo per assicurarmi che il nome della colonna non sia vuoto
+                        if (!empty($columnName)) {
+                            $filteredQuery->orderBy($columnName, $orderDirection);
+                        }
                     }
                 }
 
@@ -351,11 +365,26 @@ class ControllerMaster extends Controller
                 $length = $request->input('length', 10);
                 $data = $filteredQuery->offset($start)->limit($length)->get();
 
+                // Aggiunta della colonna virtuale 'archivio_descr'
+                $data->map(function ($item) {
+                    if ($item->dele == 1) {
+                        $item->archivio_descr = 'Eliminato';
+                    } elseif (isset($item->archivio)) {
+                        // Usa ucfirst per rendere la prima lettera maiuscola (es. 'attivo' -> 'Attivo')
+                        $item->archivio_descr = ucfirst($item->archivio);
+                    } else {
+                        $item->archivio_descr = 'Attivo';
+                    }
+                    // La colonna 'operazioni' è gestita dal JS, non serve aggiungerla qui
+                    $item->operazioni = '';
+                    return $item;
+                });
+
                 return response()->json([
                     "draw"            => intval($request->input('draw')),
                     "recordsTotal"    => intval($totalData),
                     "recordsFiltered" => intval($totalFiltered),
-                    "data"            => $data
+                    "data"            => $data,
                 ]);
             } catch (\Exception $e) {
                 // Logga l'errore per il debug
@@ -366,7 +395,7 @@ class ControllerMaster extends Controller
                     "recordsTotal"    => 0,
                     "recordsFiltered" => 0,
                     "data"            => [],
-                    "error"           => "Si è verificato un errore sul server." // Opzionale: per debug
+                    "error"           => "Si è verificato un errore sul server: " . $e->getMessage() // Miglioro il messaggio di errore per il debug
                 ]);
             }
         }
@@ -376,14 +405,34 @@ class ControllerMaster extends Controller
 
     public function dele_master(Request $request) {
 
-
-
-
         $id_ref=$request->input('id_ref');
-        $dele=tbl_master::where('id','=',$id_ref)->update(['dele' =>1]);
+        // Esegue una cancellazione logica impostando il flag 'dele' a 1.
+        // Il record non verrà più mostrato nell'elenco principale.
+        $dele=tbl_master::where('id','=',$id_ref)->update(['dele' => 1]);
         $esito['header']="OK";
         $esito['dele']=$dele;
         echo json_encode($esito);
+    }
+
+    public function restore_master(Request $request)
+    {
+        try {
+            $id_ref = $request->input('id_ref');
+            if (!$id_ref) {
+                return response()->json(['success' => false, 'message' => 'ID master non fornito.'], 400);
+            }
+    
+            $restored = tbl_master::where('id', '=', $id_ref)->update(['dele' => 0]);
+    
+            if ($restored) {
+                return response()->json(['success' => true, 'message' => 'Master ripristinato con successo.']);
+            } else {
+                return response()->json(['success' => false, 'message' => 'Master non trovato o nessun aggiornamento necessario.']);
+            }
+        } catch (\Exception $e) {
+            \Log::error("Errore in restore_master: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Errore del server durante il ripristino.'], 500);
+        }
     }
 
     function to_def(Request $request) {
@@ -563,12 +612,19 @@ class ControllerMaster extends Controller
         }
     }
 
-    public function archive_master(Request $request)
+    public function move_master(Request $request)
     {
         try {
             $id_doc = $request->input('id_doc');
+            $target_archivio = $request->input('target_archivio');
+            // Ora 'attivo' è uno stato di destinazione valido.
+            $allowed_archives = ['attivo', 'obsoleto', 'confermato'];
+
             if (!$id_doc) {
                 return response()->json(['success' => false, 'message' => 'ID documento non fornito.'], 400);
+            }
+            if (!in_array($target_archivio, $allowed_archives)) {
+                return response()->json(['success' => false, 'message' => 'Stato di destinazione non valido.'], 400);
             }
 
             $master = tbl_master::where('id_doc', $id_doc)->first();
@@ -576,25 +632,13 @@ class ControllerMaster extends Controller
                 return response()->json(['success' => false, 'message' => 'Master non trovato.'], 404);
             }
 
-            /*
-            $client = new \Google_Client();
-            $client->setClientId(env('GOOGLE_DRIVE_CLIENT_ID'));
-            $client->setClientSecret(env('GOOGLE_DRIVE_CLIENT_SECRET'));
-            $client->refreshToken(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
-            $service = new \Google_Service_Drive($client);
-
-            $newName = $master->real_name . "_obs";
-            $file = new \Google_Service_Drive_DriveFile(['name' => $newName]);
-            $service->files->update($id_doc, $file, ['fields' => 'id, name']);
-            */
-
-            $master->obsoleti = 1;
+            $master->archivio = $target_archivio;
             $master->save();
 
-            return response()->json(['success' => true, 'message' => 'Master archiviato con successo.']);
+            return response()->json(['success' => true, 'message' => 'Master spostato con successo in ' . ucfirst($target_archivio) . '.']);
         } catch (\Exception $e) {
-            \Log::error("Errore in archive_master: " . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Errore del server durante l\'archiviazione.'], 500);
+            \Log::error("Errore in move_master: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Errore del server durante lo spostamento.'], 500);
         }
     }
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GuidaController;
+use App\Http\Controllers\ControllerMaster;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MasterSyncController;
 
@@ -43,6 +44,11 @@ Route::middleware('auth')->group(function () {
         
     Route::post('dele_master', [ 'as' => 'dele_master', 'uses' => 'App\Http\Controllers\ControllerMaster@dele_master']);
     Route::post('save_master', [ 'as' => 'save_master', 'uses' => 'App\Http\Controllers\ControllerMaster@save_master']);
+
+    // Rotta per spostare un master in un altro archivio (obsoleto, confermato, ecc.)
+    Route::post('/move-master', [ControllerMaster::class, 'move_master'])->name('move_master');
+    Route::post('/restore_master', [App\Http\Controllers\ControllerMaster::class, 'restore_master'])->name('restore_master');
+
 
     Route::get('elenco_provvisori', [ 'as' => 'elenco_provvisori', 'uses' => 'App\Http\Controllers\ControllerProvvisori@elenco_provvisori']);
 
