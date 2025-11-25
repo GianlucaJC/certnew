@@ -349,14 +349,41 @@ function dele_master(id_ref) {
         text: "Il master verrà spostato nel cestino!",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#3085d6',
         confirmButtonColor: '#d33',
         confirmButtonText: 'Sì, elimina!',
         cancelButtonText: 'Annulla'
     }).then((result) => {
         if (result.isConfirmed) {
-            $('#dele_contr').val(id_ref);
-            $('#frm_articolo').attr('action', 'dele_master').submit();
+            const metaElements = document.querySelectorAll('meta[name="csrf-token"]');
+            const csrf = metaElements.length > 0 ? metaElements[0].content : "";
+            const baseUrl = $('meta[name="base-url"]').attr('content');
+
+            fetch(`${baseUrl}/dele_master`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-CSRF-TOKEN': csrf
+                },
+                body: `id_ref=${id_ref}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Errore di rete o del server.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Eliminato!', data.message, 'success');
+                    window.masterDataTable.ajax.reload(null, false); // Ricarica la tabella
+                } else {
+                    Swal.fire('Errore!', data.message || 'Impossibile eliminare il master.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Errore nella chiamata fetch:', error);
+                Swal.fire('Errore!', 'Si è verificato un problema di comunicazione con il server.', 'error');
+            });
         }
     });
 }

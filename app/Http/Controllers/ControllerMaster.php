@@ -404,14 +404,20 @@ class ControllerMaster extends Controller
     }
 
     public function dele_master(Request $request) {
-
-        $id_ref=$request->input('id_ref');
-        // Esegue una cancellazione logica impostando il flag 'dele' a 1.
-        // Il record non verrà più mostrato nell'elenco principale.
-        $dele=tbl_master::where('id','=',$id_ref)->update(['dele' => 1]);
-        $esito['header']="OK";
-        $esito['dele']=$dele;
-        echo json_encode($esito);
+        try {
+            $id_ref = $request->input('id_ref');
+            if (!$id_ref) {
+                return response()->json(['success' => false, 'message' => 'ID master non fornito.'], 400);
+            }
+    
+            // Esegue una cancellazione logica impostando il flag 'dele' a 1.
+            $deleted = tbl_master::where('id', '=', $id_ref)->update(['dele' => 1]);
+    
+            return response()->json(['success' => true, 'message' => 'Master spostato nel cestino con successo.']);
+        } catch (\Exception $e) {
+            \Log::error("Errore in dele_master: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Errore del server durante l\'eliminazione.'], 500);
+        }
     }
 
     public function restore_master(Request $request)
