@@ -1,3 +1,4 @@
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M6 2h15l5 5v21H6V2zm14 1v4h4' fill='%23fff' stroke='%23000' stroke-width='2' stroke-linejoin='round'/><path d='m12 18 4 4 8-8' fill='none' stroke='%2304a24c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>" type="image/svg+xml">
 <x-guest-layout>
     <div class="card-body login-card-body">
         <p class="login-box-msg">{{ __('Accedi per iniziare la sessione') }}</p>
@@ -14,13 +15,13 @@
 
             <!-- Userid -->
             <div class="input-group mb-3">
-                <input id="email" type="text" name="email" class="form-control @error('email') is-invalid @enderror" placeholder="{{ __('Userid') }}" value="{{ old('email') }}" required autofocus autocomplete="username">
+                <input id="userid" type="text" name="userid" class="form-control @error('userid') is-invalid @enderror" placeholder="{{ __('Userid') }}" value="{{ old('userid') }}" required autofocus autocomplete="username">
                 <div class="input-group-append">
                     <div class="input-group-text">
                         <span class="fas fa-user"></span>
                     </div>
                 </div>
-                @error('email')
+                @error('userid')
                     <span class="invalid-feedback" role="alert">
                         <strong>{{ $message }}</strong>
                     </span>

@@ -19,6 +19,33 @@ class MasterSyncController extends Controller
         return view('all_views.master.sincro_master');
     }
 
+    /**
+     * Sincronizza i file master dalla cartella locale 'public/doc/master' al database.
+     * 
+     * Questa funzione scansiona la cartella locale e rileva sia i file **nuovi** che quelli **aggiornati**.
+     * I file rilevati vengono aggiunti o aggiornati nella tabella `tbl_master` come "pendenti",
+     * pronti per essere caricati su Google Drive.
+     * 
+     * La logica di rilevamento è la seguente:
+     * 1.  **File Nuovo**: Se un file non è presente nel database, viene aggiunto come "pendente".
+     * 2.  **File Aggiornato**: Se un file è già presente nel database, la funzione confronta la data di ultima
+     *     modifica del file locale con quella registrata (`local_last_modified`). Se il file locale è più
+     *     recente, viene nuovamente marcato come "pendente" per consentire la sovrascrittura su Drive.
+     *
+     * Durante la scansione, vengono saltati i seguenti file:
+     * - File temporanei o di sistema (es. che iniziano con '~' o 'thumbs.db').
+     * - File già presenti e non modificati rispetto all'ultima sincronizzazione.
+     *
+     * I file pendenti vengono identificati da un `id_doc` nel formato 'local_file_[nomefile]'.
+     * 
+     * **Importante:** Questa logica richiede una colonna `local_last_modified` (DATETIME o TIMESTAMP)
+     * nella tabella `tbl_master` per funzionare correttamente.
+     *
+     * @param Request $request La richiesta HTTP (attualmente non utilizzata per parametri specifici).
+     * @return \Illuminate\Http\JsonResponse
+     * Restituisce un oggetto JSON con l'esito, il messaggio, l'elenco dei file aggiunti,
+     * il totale dei file scansionati e il numero di file processati.
+     */
     public function sync(Request $request)
     {
         try {
@@ -27,49 +54,61 @@ class MasterSyncController extends Controller
                 return response()->json(['success' => false, 'message' => 'La cartella public/doc/master non esiste.'], 404);
             }
 
-            $localFiles = File::files($localMasterPath);
+            // Scansiona sempre l'intera cartella. La logica rileva automaticamente file nuovi e aggiornati.
+            $filesToScan = File::files($localMasterPath);
             $addedFiles = [];
-            $totalFiles = count($localFiles);
-            $processedCount = 0;
-
-            // Get existing real_names from tbl_master, excluding those already marked as local
-            $existingMasterNames = tbl_master::where('id_doc', 'NOT LIKE', 'local_file_%')
-                                            ->pluck('real_name')
-                                            ->toArray();
-            // Also get existing local files from tbl_master to avoid re-adding them
-            $existingLocalMasterNames = tbl_master::where('id_doc', 'LIKE', 'local_file_%')
-                                                ->pluck('real_name')
-                                                ->toArray();
-
-            foreach ($localFiles as $file) {
+            $totalFiles = count($filesToScan);
+            
+            foreach ($filesToScan as $file) {
                 $filenameWithExtension = $file->getFilename();
                 $filenameWithoutExtension = pathinfo($filenameWithExtension, PATHINFO_FILENAME);
-
-                // Condizione per non inserire file temporanei o di sistema
+                $localFileTimestamp = $file->getMTime();
+                
+                // Salta file temporanei o di sistema
                 if (str_starts_with($filenameWithExtension, '~') || strtolower($filenameWithExtension) === 'thumbs.db') {
-                    continue; // Salta i file
+                    continue;
                 }
 
-                // Check if this file (by its real_name) already exists in tbl_master
-                // either as a Google Drive master or as an already synced local file
-                if (in_array($filenameWithoutExtension, $existingMasterNames) || in_array($filenameWithoutExtension, $existingLocalMasterNames)) {
-                    $processedCount++;
-                    continue; // Skip if already present
+                // Query più robusta: cerca il record "attivo" (non pendente) per evitare ambiguità
+                // se esistono duplicati o record pendenti.
+                $master = tbl_master::where('real_name', $filenameWithoutExtension)
+                                    ->where('id_doc', 'NOT LIKE', 'local_file_%')
+                                    ->first();
+
+                if (!$master) {
+                    // --- CASO 1: FILE NUOVO ---
+                    // Non è stato trovato un master "ufficiale" (su Drive).
+                    // Verifichiamo se esiste già un record "pendente" per questo file.
+                    $pendingMasterExists = tbl_master::where('id_doc', 'local_file_' . $filenameWithoutExtension)->exists();
+
+                    if (!$pendingMasterExists) {
+                        // Solo se non esiste NESSUN record per questo file, lo creiamo come pendente.
+                        $newMaster = new tbl_master();
+                        $newMaster->real_name = $filenameWithoutExtension;
+                        $newMaster->id_doc = 'local_file_' . $filenameWithoutExtension;
+                        $newMaster->local_last_modified = date('Y-m-d H:i:s', $localFileTimestamp);
+                        $newMaster->save();
+                        $addedFiles[] = $filenameWithExtension;
+                    }
+                } else {
+                    // --- CASO 2: FILE ESISTENTE ---
+                    // Se il file è già marcato come pendente, lo saltiamo per evitare di riproporlo.
+                    if (str_starts_with($master->id_doc, 'local_file_')) {
+                        continue;
+                    }
+
+                    // Confronta la data di modifica del file con quella nel DB.
+                    $dbTimestamp = strtotime($master->local_last_modified);
+
+                    if ($localFileTimestamp > $dbTimestamp) {
+                        // Il file locale è stato aggiornato, lo marchiamo di nuovo come pendente.
+                        $master->id_doc = 'local_file_' . $filenameWithoutExtension;
+                        $master->local_last_modified = date('Y-m-d H:i:s', $localFileTimestamp);
+                        $master->obsoleti = 0; // Assicurati che non sia escluso
+                        $master->save();
+                        $addedFiles[] = $filenameWithExtension;
+                    }
                 }
-
-                // Add to tbl_master
-                $master = new tbl_master();
-                $master->real_name = $filenameWithoutExtension;
-                // Use a unique identifier for local files in id_doc
-                $master->id_doc = 'local_file_' . $filenameWithoutExtension;
-                $master->dele = 0;
-                $master->obsoleti = 0;
-                $master->sistemato = 0;
-                // Other fields can be null or default
-                $master->save();
-
-                $addedFiles[] = $filenameWithExtension;
-                $processedCount++;
             }
 
             return response()->json([
@@ -77,7 +116,7 @@ class MasterSyncController extends Controller
                 'message' => 'Sincronizzazione completata.',
                 'added_files' => $addedFiles,
                 'total_files_scanned' => $totalFiles,
-                'processed_count' => $processedCount
+                'processed_count' => count($addedFiles)
             ]);
 
         } catch (\Exception $e) {
@@ -117,6 +156,7 @@ class MasterSyncController extends Controller
     public function uploadToDrive(Request $request)
     {
         $filename = $request->input('filename');
+        $overwrite = $request->input('overwrite', false);
         if (!$filename) {
             return response()->json(['success' => false, 'message' => 'Nome file non fornito.'], 400);
         }
@@ -130,32 +170,70 @@ class MasterSyncController extends Controller
             // Rimuove l'estensione, che potrebbe essere .doc o .docx
             $filenameWithoutExtension = preg_replace('/\\.[^.\\s]{3,4}$/', '', $filename);
 
+            // Controlla se un master con questo nome esiste già su Google Drive (non un file locale)
+            $master = tbl_master::where('real_name', $filenameWithoutExtension)
+                                ->where('id_doc', 'NOT LIKE', 'local_file_%')
+                                ->first();
 
+            // Se il master esiste e NON si vuole sovrascrivere, salta il file.
+            if ($master && !$overwrite) {
+                return response()->json(['success' => true, 'skipped' => true, 'message' => "File $filename saltato perché esiste già e la sovrascrittura non è abilitata."]);
+            }
 
-            // Upload to Google Drive
+            // Inizializza il client di Google
             $client = new \Google_Client();
             $client->setClientId(env('GOOGLE_DRIVE_CLIENT_ID'));
             $client->setClientSecret(env('GOOGLE_DRIVE_CLIENT_SECRET'));
             $client->refreshToken(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
             $service = new \Google_Service_Drive($client);
 
-            $id_folder_master = "1OWWv1lv28wsv3wJsIzqAeg4VQ4r1e8Fe"; // cartella master statica
+            if ($master && $overwrite) {
+                // --- LOGICA DI SOVRASCRITTURA ---
+                if (!$master) {
+                    return response()->json(['success' => false, 'message' => "Master '$filenameWithoutExtension' non trovato nel database per la sovrascrittura."], 404);
+                }
 
-            //$id_folder_master = "1GrLWfZ4c_ivMXwxWFMG3R86opCO6ftkw"; // cartella master_new per test statica
-            $googleFile = new \Google_Service_Drive_DriveFile([
-                'name' => $filenameWithoutExtension, // Carica senza estensione .doc
-                'parents' => [$id_folder_master],
-                'mimeType' => 'application/vnd.google-apps.document'
-            ]);
+                $fileId = $master->id_doc;
+                $emptyFile = new \Google_Service_Drive_DriveFile(); // File vuoto per l'update
 
-            $createdFile = $service->files->create($googleFile, ['uploadType' => 'media', 'data' => File::get($localFilePath)]);
+                $updatedFile = $service->files->update($fileId, $emptyFile, [ // Correzione qui
+                    'data' => File::get($localFilePath),
+                    'uploadType' => 'multipart',
+                    'fields' => 'id',
+                ]);
 
-            // Update the database record
-            tbl_master::where('real_name', $filenameWithoutExtension)
-                      ->where('id_doc', 'like', 'local_file_%')
-                      ->update(['id_doc' => $createdFile->id]);
+                // Aggiorna il record principale con la data di modifica attuale
+                $master->local_last_modified = now();
+                $master->save();
 
-            return response()->json(['success' => true, 'message' => "File $filename caricato con successo.", 'new_id' => $createdFile->id]);
+                // Rimuovi l'eventuale record 'local_file' duplicato che è stato creato dalla sincronizzazione
+                tbl_master::where('real_name', $filenameWithoutExtension)
+                          ->where('id_doc', 'like', 'local_file_%')
+                          ->delete();
+                
+                return response()->json(['success' => true, 'message' => "File $filename sovrascritto con successo.", 'updated_id' => $updatedFile->id]);
+
+            } else {
+                // --- LOGICA DI CREAZIONE (comportamento originale) ---
+                $id_folder_master = "1OWWv1lv28wsv3wJsIzqAeg4VQ4r1e8Fe"; // cartella master statica
+                $googleFile = new \Google_Service_Drive_DriveFile([
+                    'name' => $filenameWithoutExtension,
+                    'parents' => [$id_folder_master],
+                ]);
+                $createdFile = $service->files->create($googleFile, [
+                    'data' => File::get($localFilePath),
+                    'mimeType' => 'application/msword',
+                    'uploadType' => 'multipart',
+                    'fields' => 'id'
+                ]);
+
+                // Aggiorna il record 'local_file' con il nuovo ID di Drive e la data di modifica
+                tbl_master::where('real_name', $filenameWithoutExtension)
+                          ->where('id_doc', 'like', 'local_file_%')
+                          ->update(['id_doc' => $createdFile->id, 'local_last_modified' => now()]);
+
+                return response()->json(['success' => true, 'message' => "File $filename caricato con successo.", 'new_id' => $createdFile->id]);
+            }
 
         } catch (\Exception $e) {
             Log::error("Errore durante il caricamento su Drive del file $filename: " . $e->getMessage());
@@ -180,6 +258,38 @@ class MasterSyncController extends Controller
 
             // Sposta il file nella cartella di destinazione
             $file->move($localMasterPath, $filename);
+
+            // --- NUOVA LOGICA: REGISTRA IL FILE NEL DATABASE ---
+            $filenameWithoutExtension = pathinfo($filename, PATHINFO_FILENAME);
+
+            // Cerca un master esistente con lo stesso nome, indipendentemente dal suo stato.
+            // Diamo priorità al record che è già su Drive per l'aggiornamento.
+            $master = tbl_master::where('real_name', $filenameWithoutExtension)
+                                ->where('id_doc', 'NOT LIKE', 'local_file_%')
+                                ->first();
+
+            if ($master) {
+                // Se il master esiste già, lo aggiorniamo per marcarlo come "pendente".
+                $master->id_doc = 'local_file_' . $filenameWithoutExtension;
+                $master->local_last_modified = now();
+                $master->obsoleti = 0; // Assicurati che non sia escluso
+                $master->save();
+            } else {
+                // Se non esiste un master "ufficiale", controlliamo se esiste già un record "pendente".
+                $pendingMaster = tbl_master::where('id_doc', 'local_file_' . $filenameWithoutExtension)->first();
+                if ($pendingMaster) {
+                    // Se esiste già un pendente, aggiorniamo solo la sua data di modifica.
+                    $pendingMaster->local_last_modified = now();
+                    $pendingMaster->save();
+                } else {
+                    // Altrimenti, creiamo un nuovo record pendente.
+                    $newMaster = new tbl_master();
+                    $newMaster->real_name = $filenameWithoutExtension;
+                    $newMaster->id_doc = 'local_file_' . $filenameWithoutExtension;
+                    $newMaster->local_last_modified = now();
+                    $newMaster->save();
+                }
+            }
 
             return response()->json(['success' => true, 'message' => "File $filename caricato con successo."]);
 

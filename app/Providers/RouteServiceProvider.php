@@ -19,9 +19,11 @@ class RouteServiceProvider extends ServiceProvider
      */
     public static function home()
     {
+        /*
         if (config('menu.full_menu_enabled', true) === false) {
             return '/elenco_master';
         }
+        */
 
         return '/firstpage';
     }

@@ -1,137 +1,124 @@
 <?php
 use Illuminate\Support\Facades\Storage;
 ?>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    @php($title = "Elenco Master")
+    @include('layouts.bootstrap_partials.head', ['title' => $title])
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M6 2h15l5 5v21H6V2zm14 1v4h4' fill='%23fff' stroke='%23000' stroke-width='2' stroke-linejoin='round'/><path d='m12 18 4 4 8-8' fill='none' stroke='%2304a24c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>" type="image/svg+xml">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/datatables.min.css"/>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fa;
+        }
+        tfoot input {
+            width: 100%;
+            padding: 3px;
+            box-sizing: border-box;
+        }
+        .bg-danger-light {
+            background-color: #f5c6cb !important;
+            color: #721c24;
+        }
+        /* Stili per tabella più compatta */
+        #tbl_articoli {
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100" style="padding-bottom: 60px;"> <!-- Aggiunto padding per non sovrapporre il footer -->
 
-@extends('all_views.viewmaster.index')
+    @include('layouts.bootstrap_partials.navbar')
 
-@section('title', 'Certificati')
-@section('extra_style') 
-<!-- x button export -->
+@section('sidebar_extra_content')
+    <div class="card shadow-sm mt-3">
+        <div class="card-header">
+            <h5 class="card-title m-0">Operazioni Master</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary btn-sm text-start" onclick='edit_rev(0)'><i class="fas fa-plus-circle fa-fw me-2"></i>Nuovo Master</button>
+                <button type="button" class="btn btn-info btn-sm text-start" id="btn_verifica_tag_master" onclick="showTagSelectionModal()"><i class="fas fa-tags fa-fw me-2"></i>Verifica TAG</button>
+                <hr class="my-2">
+                <button type="button" class="btn btn-secondary btn-sm text-start" id="filtra_mai_scansionati"><i class="fas fa-eye-slash fa-fw me-2"></i>Solo mai scansionati</button>
+                <button type="button" class="btn btn-warning btn-sm text-start" id="filtra_tag_mancanti"><i class="fas fa-exclamation-triangle fa-fw me-2"></i>Filtra tag mancanti</button>
+                <button type="button" class="btn btn-outline-success btn-sm text-start" id="filtra_sistemati"><i class="fas fa-check fa-fw me-2"></i>Solo Sistemati</button>
+                <button type="button" class="btn btn-outline-danger btn-sm text-start" id="filtra_non_sistemati"><i class="fas fa-times fa-fw me-2"></i>Solo Non Sistemati</button>
+                <button type="button" class="btn btn-light btn-sm text-start border" id="reset_filtri"><i class="fas fa-undo fa-fw me-2"></i>Reset Filtri</button>
+            </div>
+        </div>
+    </div>
 
-<link href="https://cdn.datatables.net/buttons/1.7.0/css/buttons.dataTables.min.css" rel="stylesheet">
-<!-- -->
+    <div class="card shadow-sm mt-3">
+        <div class="card-header">
+            <h5 class="card-title m-0">Filtra per Archivio</h5>
+        </div>
+        <div class="card-body">
+            <div class="btn-group w-100">
+                <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-archive"></i> <span id="current-archivio-filter">Attivi</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" id="archivio-filter-menu">
+                    <li><a class="dropdown-item archivio-filter" href="#" data-archivio="attivo">Attivi</a></li>
+                    <li><a class="dropdown-item archivio-filter" href="#" data-archivio="obsoleto">Obsoleti</a></li>
+                    <li><a class="dropdown-item archivio-filter" href="#" data-archivio="confermato">Confermati</a></li>
+                    <li><a class="dropdown-item archivio-filter" href="#" data-archivio="eliminati">Eliminati</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item archivio-filter" href="#" data-archivio="all">Tutti</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
 @endsection
 
-
-
-<style>
-	tfoot input {
-        width: 100%;
-        padding: 3px;
-        box-sizing: border-box;
-    }
-    .bg-danger-light {
-        background-color: #f5c6cb !important; /* Un rosso più chiaro/sbiadito */
-        color: #721c24; /* Testo scuro per leggibilità */
-    }
-</style>
-@section('content_main')
-  <!-- Content Wrapper. Contains page content -->
-  <div class="content-wrapper">
-    <!-- Content Header (Page header) -->
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0">ELENCO MASTER</h1>
-          </div><!-- /.col -->
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="{{ route('elenco_lotti') }}">Home</a></li>
-			  <li class="breadcrumb-item">Master</li>
-              <li class="breadcrumb-item active">Elenco Master</li>
-            </ol>
-          </div><!-- /.col -->
-        </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
-    </div>
-    <!-- /.content-header -->
-
-
-    <!-- Main content -->
-    <div class="content">
-      <div class="container-fluid">
-
-		<form method='post' action="{{ route('elenco_master') }}" id='frm_articolo' name='frm_articolo' autocomplete="off">
-      <input name="_token" type="hidden" value="{{ csrf_token() }}" id='token_csrf'>
-      <meta name="csrf-token" content="{{{ csrf_token() }}}">
-      <meta name="base-url" content="{{ url('/') }}">
+    <main class="container-fluid mt-3 flex-grow-1">
         <div class="row">
-          <div class="col-md-12">
-            <div class="card card-primary card-outline mb-3">
-              <div class="card-header">
-                <h5 class="card-title">Operazioni Master</h5>
-              </div>
-              <div class="card-body d-flex flex-wrap align-items-start">
-                <div>
-                  <button type="button" class="btn btn-primary btn-sm m-1" onclick='edit_rev(0)'><i class="fas fa-plus-circle"></i> Nuovo Master</button>
-                  <button type="button" class="btn btn-info btn-sm m-1" id="btn_verifica_tag_master" onclick="showTagSelectionModal()"><i class="fas fa-tags"></i> Verifica TAG</button>
-                  <button type="button" class="btn btn-secondary btn-sm m-1" id="filtra_mai_scansionati"><i class="fas fa-eye-slash"></i> Solo mai scansionati</button>
-                  <button type="button" class="btn btn-warning btn-sm m-1" id="filtra_tag_mancanti"><i class="fas fa-exclamation-triangle"></i> Filtra tag essenziali non rilevati</button>
-                  <button type="button" class="btn btn-outline-success btn-sm m-1" id="filtra_sistemati"><i class="fas fa-check"></i> Solo Sistemati</button>
-                  <button type="button" class="btn btn-outline-danger btn-sm m-1" id="filtra_non_sistemati"><i class="fas fa-times"></i> Solo Non Sistemati</button>
-                  <button type="button" class="btn btn-default btn-sm m-1" id="reset_filtri"><i class="fas fa-undo"></i> Reset Filtri</button>
-                </div>
-                <div class="btn-group ml-auto">
-                  <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-archive"></i> Filtra per Archivio: <span id="current-archivio-filter">Attivi</span>
-                  </button>
-                  <div class="dropdown-menu dropdown-menu-right" id="archivio-filter-menu">
-                    <a class="dropdown-item archivio-filter" href="#" data-archivio="attivo">Attivi</a>
-                    <a class="dropdown-item archivio-filter" href="#" data-archivio="obsoleto">Obsoleti</a>
-                    <a class="dropdown-item archivio-filter" href="#" data-archivio="confermato">Confermati</a>
-                    <a class="dropdown-item archivio-filter" href="#" data-archivio="eliminati">Eliminati</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item archivio-filter" href="#" data-archivio="all">Tutti</a>
-                  </div>
-                </div>
-              </div>
+            <div class="col-md-2">
+                @include('all_views.master.sidebar')
             </div>
-          </div>
+
+            <div class="col-md-10">
+
+
+                <form method='post' action="{{ route('elenco_master') }}" id='frm_articolo' name='frm_articolo' autocomplete="off">
+                    <input name="_token" type="hidden" value="{{ csrf_token() }}" id='token_csrf'>
+                    <meta name="csrf-token" content="{{{ csrf_token() }}}">
+                    <meta name="base-url" content="{{ url('/') }}">
+
+                    <table id='tbl_articoli' class="display table table-sm table-striped table-bordered" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th style='min-width:210px'>Operazioni</th>
+                                <th>Nome Master</th>
+                                <th>Rev</th>
+                                <th>Data Creazione</th>
+                                <th style='max-width:200px'>Tag Rilevati</th>
+                                <th>Archivio</th>
+                                <th>Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- I dati verranno caricati da DataTables via AJAX -->
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th></th>
+                                <th>Nome Master</th>
+                                <th>Rev</th>
+                                <th>Data Creazione</th>
+                                <th>Tag Rilevati</th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <input type='hidden' id='dele_contr' name='dele_contr'>
+                    <input type='hidden' id='restore_contr' name='restore_contr'>
+                </form>
+            </div>
         </div>
-        <div class="row">
-          <div class="col-md-12">
-            <table id='tbl_articoli' class="display">
-                    <thead>
-                      <tr>
-                        <th style='min-width:210px'>Operazioni</th>
-                        <th>Nome Master</th>
-                        <th>Rev</th>
-                        <th>Data Creazione</th>
-                        <th style='max-width:200px'>Tag Rilevati</th>
-                        <th>Archivio</th>
-                        <th>Stato</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <!-- I dati verranno caricati da DataTables via AJAX -->
-                    </tbody>
-                    <tfoot>
-                      <tr>
-                        <th></th>
-                        <th>Nome Master</th>
-                        <th>Rev</th>
-                        <th>Data Creazione</th>
-                        <th>Tag Rilevati</th>
-                        <th></th>
-                        <th></th>
-                      </tr>
-                    </tfoot>
-            </table>
-			    	<input type='hidden' id='dele_contr' name='dele_contr'>
-				    <input type='hidden' id='restore_contr' name='restore_contr'>
-			
-          </div>
-
-        </div>
-
-
-		</form>
-        <!-- /.row -->
-      </div><!-- /.container-fluid -->
-    </div>
-    <!-- /.content -->
-  </div>
 
 <!-- Modal -->
 <div class="modal fade bd-example-modal-lg" id="modal_story" tabindex="-1" role="dialog" aria-labelledby="info" aria-hidden="true">
@@ -139,7 +126,7 @@ use Illuminate\Support\Facades\Storage;
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="title_modal">Modal title</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
@@ -148,7 +135,7 @@ use Illuminate\Support\Facades\Storage;
       </div>
       <div class="modal-footer">
 		    <div id='altri_btn'></div>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -160,7 +147,7 @@ use Illuminate\Support\Facades\Storage;
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="tagSelectionModalLabel">Seleziona i TAG da Verificare</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
@@ -185,7 +172,7 @@ use Illuminate\Support\Facades\Storage;
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
         <button type="button" class="btn btn-primary" onclick="startVerificationProcess()">Avvia Verifica</button>
       </div>
     </div>
@@ -198,7 +185,7 @@ use Illuminate\Support\Facades\Storage;
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="verificationChoiceModalLabel">Scegli l'ambito della verifica</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
@@ -206,7 +193,7 @@ use Illuminate\Support\Facades\Storage;
         <p>Vuoi verificare i tag per tutti i master filtrati o solo per quelli visibili in questa pagina?</p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
         <button type="button" class="btn btn-primary" onclick="verificaTagMaster('page')">Solo pagina corrente</button>
         <button type="button" class="btn btn-primary" onclick="verificaTagMaster('all')">Tutti i risultati filtrati</button>
       </div>
@@ -232,35 +219,24 @@ use Illuminate\Support\Facades\Storage;
       </div>
     </div>
   </div>
-</div>   
-  <!-- /.content-wrapper -->
-  
- @endsection
+</div>
  
- @section('content_plugin')
-	<!-- jQuery -->
-	<script src="{{ URL::asset('/') }}plugins/jquery/jquery.min.js"></script>
-	<!-- Bootstrap 4 -->
-	<script src="{{ URL::asset('/') }}plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-	<!-- AdminLTE App -->
-	<script src="{{ URL::asset('/') }}dist/js/adminlte.min.js"></script>
+    <div class="mt-auto fixed-bottom">
+        @include('layouts.bootstrap_partials.footer')
+    </div>
 
 
-	
-	<!-- inclusione standard
-		per personalizzare le dipendenze DataTables in funzione delle opzioni da aggiungere: https://datatables.net/download/
-	!-->
-	
-	<!-- dipendenze DataTables !-->
-		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/datatables.min.css"/>
-		 
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
-		<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/datatables.min.js"></script>
-	<!-- fine DataTables !-->
-	
-	
-	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-	<script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=<?php echo time();?>"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Bootstrap 5 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/datatables.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ URL::asset('/') }}dist/js/elenco_master.js?ver=<?php echo time();?>"></script>
 
-@endsection
+</body>
+</html>

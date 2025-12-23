@@ -53,6 +53,7 @@ class mainController extends Controller
 
 	function getClient($scope="docs")
 	{
+	
 		/*	N.B. ho utilizzato DB su porta 8012
 			da Console API Google (con una utenza loggata ovviamente)
 			(N.B.:la console API deve essere quella dove dovranno essere presenti i documenti)

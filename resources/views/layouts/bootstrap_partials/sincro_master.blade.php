@@ -2,7 +2,6 @@
 <html lang="it">
 <head>
     @php($title = "Sincronizzazione Master Locali")
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M6 2h15l5 5v21H6V2zm14 1v4h4' fill='%23fff' stroke='%23000' stroke-width='2' stroke-linejoin='round'/><path d='m12 18 4 4 8-8' fill='none' stroke='%2304a24c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>" type="image/svg+xml">    
     @include('layouts.bootstrap_partials.head', ['title' => $title])
     <style>
         body {
@@ -15,23 +14,20 @@
 
     @include('layouts.bootstrap_partials.navbar')
 
-    <main class="container-fluid mt-3 flex-grow-1">
-        <div class="row">
-            <div class="col-md-2">
-                @include('all_views.master.sidebar')
+    <main class="container my-5 flex-shrink-0">
+        <div class="row mb-4">
+            <div class="col">
+                <h1 class="m-0">Sincronizzazione Master Locali</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Sincronizzazione Master</li>
+                    </ol>
+                </nav>
             </div>
+        </div>
 
-            <div class="col-md-10">
-                {{-- Rimosso il breadcrumb per coerenza con le altre pagine --}}
-                <div class="row mb-4">
-                    <div class="col">
-                        <h1 class="m-0">Sincronizzazione Master Locali</h1>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm">
-                    {{-- Il resto del contenuto della card rimane qui --}}
-                    
+        <div class="card shadow-sm">
             <div class="card-header bg-light">
                 <h5 class="card-title mb-0">Sincronizza File Master Locali con Database</h5>
             </div>
@@ -109,8 +105,6 @@
                                 </tbody>
                             </table>
                         </div>
-                </div>
-
             </div>
         </div>
     </main>
@@ -183,9 +177,7 @@
         </div>
     </div>
 
-    <div class="mt-auto fixed-bottom">
-        @include('layouts.bootstrap_partials.footer')
-    </div>
+    @include('layouts.bootstrap_partials.footer')
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -252,66 +244,53 @@
             checkPendingUploads(); // Esegui al caricamento
 
             $('#startSyncBtn').on('click', function() {
-                Swal.fire({
-                    title: 'Conferma Sincronizzazione',
-                    text: "Stai per avviare la scansione della cartella dei master sul server. L'operazione cercherà file nuovi o modificati. Vuoi procedere?",
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Sì, avvia!',
-                    cancelButtonText: 'Annulla'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        if (isSyncing) return;
+                if (isSyncing) return;
 
-                        isSyncing = true;
-                        isCancelled = false;
-                        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Sincronizzazione in corso...');
-                        $('#cancelSyncBtn').removeClass('d-none');
-                        $('#excludeFilesBtn').addClass('d-none').prop('disabled', true);
-                        $('#uploadToDriveBtn').addClass('d-none').prop('disabled', true);
-                        $('#syncResultsContainer').addClass('d-none');
-                        $('#addedFilesList').empty();
-                        $('#syncProgressBar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
-                        $('#syncStatusText').text('Avvio scansione...');
+                isSyncing = true;
+                isCancelled = false;
+                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Sincronizzazione in corso...');
+                $('#cancelSyncBtn').removeClass('d-none');
+                $('#excludeFilesBtn').addClass('d-none').prop('disabled', true);
+                $('#uploadToDriveBtn').addClass('d-none').prop('disabled', true);
+                $('#syncResultsContainer').addClass('d-none');
+                $('#addedFilesList').empty();
+                $('#syncProgressBar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+                $('#syncStatusText').text('Avvio scansione...');
 
-                        const csrfToken = $('meta[name="csrf-token"]').attr('content');
-                        const syncUrl = "{{ route('sincro_master.sync') }}";
+                const csrfToken = $('meta[name="csrf-token"]').attr('content');
+                const syncUrl = "{{ route('sincro_master.sync') }}";
 
-                        fetch(syncUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken
-                            },
-                            // Non è più necessario inviare dati, la scansione è sempre completa.
-                            body: JSON.stringify({})
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            isSyncing = false;
-                            $('#startSyncBtn').prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Avvia Sincronizzazione');
-                            $('#cancelSyncBtn').addClass('d-none');
+                fetch(syncUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    // Non è più necessario inviare dati, la scansione è sempre completa.
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    isSyncing = false;
+                    $('#startSyncBtn').prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Avvia Sincronizzazione');
+                    $('#cancelSyncBtn').addClass('d-none');
 
-                            if (data.success) {
-                                $('#syncProgressBar').css('width', '100%').attr('aria-valuenow', 100).text('100%');
-                                populateUiWithFiles(data.added_files);
-                            } else {
-                                $('#syncProgressBar').addClass('bg-danger');
-                                $('#syncStatusText').text(`Errore: ${data.message}`);
-                                alert(`Errore di sincronizzazione: ${data.message}`);
-                            }
-                        })
-                        .catch(error => {
-                            isSyncing = false;
-                            $('#startSyncBtn').prop('disabled', false).html('<i class="fas fa-sync-alt></i> Avvia Sincronizzazione');
-                            $('#cancelSyncBtn').addClass('d-none');
-                            $('#syncProgressBar').addClass('bg-danger');
-                            $('#syncStatusText').text(`Errore di rete: ${error.message}`);
-                            alert(`Errore di rete durante la sincronizzazione: ${error.message}`);
-                        });
+                    if (data.success) {
+                        $('#syncProgressBar').css('width', '100%').attr('aria-valuenow', 100).text('100%');
+                        populateUiWithFiles(data.added_files);
+                    } else {
+                        $('#syncProgressBar').addClass('bg-danger');
+                        $('#syncStatusText').text(`Errore: ${data.message}`);
+                        alert(`Errore di sincronizzazione: ${data.message}`);
                     }
+                })
+                .catch(error => {
+                    isSyncing = false;
+                    $('#startSyncBtn').prop('disabled', false).html('<i class="fas fa-sync-alt></i> Avvia Sincronizzazione');
+                    $('#cancelSyncBtn').addClass('d-none');
+                    $('#syncProgressBar').addClass('bg-danger');
+                    $('#syncStatusText').text(`Errore di rete: ${error.message}`);
+                    alert(`Errore di rete durante la sincronizzazione: ${error.message}`);
                 });
             });
 
